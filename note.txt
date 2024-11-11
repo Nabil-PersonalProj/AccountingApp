@@ -1,0 +1,19 @@
+delete not important for now
+creation is fine
+creating account might need type
+accounts
+1. create transactions
+  - type
+  - code
+  - date
+  Transaction no.
+Account code
+Date
+Description
+Debit
+Credit
+
+
+Company (new window)
+- account (tab)
+ -transactions (table)
