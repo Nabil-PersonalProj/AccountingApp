@@ -17,3 +17,11 @@ Credit
 Company (new window)
 - account (tab)
  -transactions (table)
+
+
+
+types of account
+1.assets 
+2.liabilities 
+3.expenses 
+4.equity

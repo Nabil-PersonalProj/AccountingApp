@@ -1,0 +1,96 @@
+/* Basic reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: #f4f6f9;
+}
+
+.container {
+  width: 80%;
+  max-width: 600px;
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+/* App Header */
+.app-header {
+  padding: 20px;
+  background-color: #007BFF;
+  color: #fff;
+  text-align: center;
+  font-weight: bold;
+}
+
+.app-header h1 {
+  font-size: 2em;
+  margin: 0;
+}
+
+/* Content Section */
+.content {
+  padding: 20px;
+}
+
+.companies-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 15px;
+  margin-bottom: 15px;
+}
+
+.companies-header h2 {
+  font-size: 1.5em;
+  color: #333;
+}
+
+.add-button {
+  cursor: pointer;
+  background-color: #007BFF;
+  color: #fff;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 5px;
+  font-size: 1.2em;
+  transition: background 0.3s;
+}
+
+.add-button:hover {
+  background-color: #0056b3;
+}
+
+.company-list {
+  list-style-type: none;
+  padding: 0;
+}
+
+.company-list li {
+  padding: 10px 0;
+  font-size: 1.1em;
+  color: #333;
+  cursor: pointer;
+  border-bottom: 1px solid #ddd;
+}
+
+.company-list li:hover {
+  background-color: #f1f1f1;
+}
+
+.info-text {
+  margin-top: 10px;
+  color: #666;
+  font-size: 0.9em;
+  text-align: center;
+}
