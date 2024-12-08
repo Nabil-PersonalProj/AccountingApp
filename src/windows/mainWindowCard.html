@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Accounting App - Company List</title>
+  <link rel="stylesheet" href="../../assets/cardstyle.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header Section -->
+    <header class="app-header">
+      <h1>Companies</h1>
+      <p>List of companies on the platform</p>
+    </header>
+
+    <!-- Filters and Add Button -->
+    <div class="toolbar">
+      <button id="addCompanyBtn" class="add-button">+</button>
+      <button id="filterBtn" class="filter-button">Filters</button>
+    </div>
+
+    <!-- Company Cards Section -->
+    <section id="companyList" class="company-cards">
+      <!-- Dynamically populated company cards -->
+    </section>
+
+    <!-- Pagination -->
+    <div class="pagination">
+      <button class="page-btn">Previous</button>
+      <span>1</span>
+      <button class="page-btn">Next</button>
+    </div>
+  </div>
+
+  <script src="../mainrenderer.js"></script>
+</body>
+</html>

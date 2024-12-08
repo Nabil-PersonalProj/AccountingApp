@@ -108,18 +108,21 @@ function addTransaction(companyDbPath, transaction) {
   });
 }
 
-// Get transactions for a specific company
-function getTransactions(companyDbPath) {
-  const db = new sqlite3.Database(companyDbPath);
-
+function getTransactions(companyId) {
   return new Promise((resolve, reject) => {
-    db.all(`SELECT * FROM transactions`, (err, rows) => {
-      if (err) {
-        db.close();
-        return reject(err);
-      }
-      db.close();
-      resolve(rows);
+    mainDb.get(`SELECT db_path FROM companies WHERE id = ?`, [companyId], (err, row) => {
+      if (err) return reject(`Error fetching db_path for company ID ${companyId}: ${err.message}`);
+      if (!row) return reject(`No company found with ID ${companyId}`);
+
+      // Access the company's database
+      const companyDbPath = path.join(__dirname, row.db_path);
+      const companyDb = new sqlite3.Database(companyDbPath);
+
+      companyDb.all(`SELECT * FROM transactions`, (err, rows) => {
+        companyDb.close(); // Close the database after query
+        if (err) return reject(`Error fetching transactions: ${err.message}`);
+        resolve(rows); // Return the transactions as an array
+      });
     });
   });
 }

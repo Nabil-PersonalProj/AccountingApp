@@ -1,0 +1,122 @@
+/* General Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f6f9;
+    color: #333;
+    padding: 20px;
+  }
+  
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  .app-header {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  .app-header h1 {
+    font-size: 2rem;
+    margin-bottom: 5px;
+  }
+  
+  .app-header p {
+    font-size: 1rem;
+    color: #777;
+  }
+  
+  .toolbar {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  
+  .add-button,
+  .filter-button {
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-size: 1rem;
+    cursor: pointer;
+    margin-left: 10px;
+  }
+  
+  .add-button:hover,
+  .filter-button:hover {
+    background-color: #0056b3;
+  }
+  
+  .company-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+  }
+  
+  .company-card {
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 15px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+  }
+  
+  .company-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+  }
+  
+  .company-card .company-name {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+  
+  .company-card .company-info {
+    font-size: 0.9rem;
+    color: #777;
+    margin-bottom: 5px;
+  }
+  
+  .company-card .status {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    color: white;
+    background-color: #28a745; /* Green for active */
+  }
+  
+  .company-card .status.inactive {
+    background-color: #dc3545; /* Red for inactive */
+  }
+  
+  .pagination {
+    text-align: center;
+    margin-top: 20px;
+  }
+  
+  .pagination .page-btn {
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    margin: 0 10px;
+    cursor: pointer;
+  }
+  
+  .pagination .page-btn:hover {
+    background-color: #0056b3;
+  }
+  
