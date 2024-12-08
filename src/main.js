@@ -73,6 +73,20 @@ ipcMain.handle('open-company-window', async (event,companyId) => {
   }
 });
 
+// Fetch the name of a specific company by ID
+ipcMain.handle('get-company-name', async (event, companyId) => {
+  try {
+    const companies = await getCompanies();
+    const company = companies.find(c => c.id === companyId);
+    if (!company) throw new Error(`Company with ID ${companyId} not found`);
+    return company.name;
+  } catch (error) {
+    console.error(`Error fetching company name for ID ${companyId}:`, error);
+    throw error;
+  }
+});
+
+
 ipcMain.handle('get-transactions', async (event, companyId) => {
   try {
     const transactions = await getTransactions(companyId);

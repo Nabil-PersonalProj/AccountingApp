@@ -2,11 +2,20 @@
 window.api.loadTransactions(async (companyId) => {
     try {
       const transactions = await window.api.getTransactions(companyId);
+      const companyName = await window.api.getCompanyName(companyId)
+      updateTitle(companyName)
       renderTransactions(transactions);
     } catch (error) {
       console.error('Error loading transactions:', error);
     }
   });
+
+  // Update the window title with the company's name
+function updateTitle(companyName) {
+    document.title = `Transactions - ${companyName}`;
+    const header = document.getElementById('companyName');
+    header.textContent = `${companyName} - Transactions`;
+  }
   
   // Render the transactions
   function renderTransactions(transactions) {
