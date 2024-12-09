@@ -18,10 +18,24 @@ Company (new window)
 - account (tab)
  -transactions (table)
 
+Company pages
+- all transactions ( transactions table)( search function to show one transactions)
+- accounts table (show all accounts and final ) account code descr debit credit
+- 
 
 
-types of account
-1.assets 
-2.liabilities 
-3.expenses 
-4.equity
+types of account (cannot be unique)
+1.assets : [ca,cb,fa,pd]
+2.liabilities : [cl]
+3.expenses : [ex]
+4.equity : [sc]
+5.profit : [pl]
+6.sales : [sa]
+7.debtors : [td]
+8.creditors : [tc]
+
+
+future functions:
+adding types of accounts
+
+add date to table

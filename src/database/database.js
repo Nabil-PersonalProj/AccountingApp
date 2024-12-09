@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 
 // Ensure the `database/` folder exists
-const databaseFolder = path.join(__dirname, 'Com_database');
+const databaseFolder = path.join(__dirname, 'company_database');
 if (!fs.existsSync(databaseFolder)) {
   fs.mkdirSync(databaseFolder);
 }
@@ -26,7 +26,7 @@ mainDb.serialize(() => {
 // Add a new company for each company added, the db for that company is also initialized
 function addCompany(name) {
   return new Promise((resolve, reject) => {
-    const relativeDbPath = `Com_database/${name.replace(/\s+/g, '_').toLowerCase()}.db`;
+    const relativeDbPath = `company_database/${name.replace(/\s+/g, '_').toLowerCase()}.db`;
     const absoluteDbPath = path.join(__dirname, relativeDbPath);
 
     // Add company into main.db
@@ -73,7 +73,9 @@ function initializeCompanyDatabase(dbPath) {
           account_code TEXT NOT NULL,
           description TEXT,
           debit REAL DEFAULT 0,
-          credit REAL DEFAULT 0
+          credit REAL DEFAULT 0,
+          date TEXT DEFAULT CURRENT_DATE,
+          account_type TEXT NOT NULL
         )
       `, (err) => {
         if (err) {
@@ -94,10 +96,10 @@ function addTransaction(companyDbPath, transaction) {
 
   return new Promise((resolve, reject) => {
     const query = `
-      INSERT INTO transactions (transaction_no, account_code, description, debit, credit)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO transactions (transaction_no, account_code, description, debit, credit, date, account_type)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
-    db.run(query, [transaction_no, account_code, description, debit, credit], function (err) {
+    db.run(query, [transaction_no, account_code, description, debit, credit, date, account_type], function (err) {
       if (err) {
         db.close();
         return reject(err);

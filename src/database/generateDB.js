@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 
 // Ensure the `database/` folder exists
-const databaseFolder = path.join(__dirname, 'database');
+const databaseFolder = path.join(__dirname, 'company_database');
 if (!fs.existsSync(databaseFolder)) {
   fs.mkdirSync(databaseFolder);
 }
@@ -16,15 +16,24 @@ const mainDb = new sqlite3.Database(mainDbPath);
 
 // Sample companies and transactions
 const sampleCompanies = [
-  { name: 'Company A' },
-  { name: 'Company B' },
-  { name: 'Company C' },
+  { name: 'Company A1' },
+  { name: 'Company B2' },
+  { name: 'Company C3' },
 ];
 
 const sampleTransactions = [
-  { transaction_no: 1, account_code: 'AC101', description: 'Initial Deposit', debit: 1000, credit: 0 },
-  { transaction_no: 2, account_code: 'AC102', description: 'Purchase Materials', debit: 0, credit: 300 },
-  { transaction_no: 3, account_code: 'AC103', description: 'Service Revenue', debit: 500, credit: 0 },
+  { transaction_no: 1, account_code: 'CA101', description: 'Asset example', debit: 0, credit: 1000, date: '2024-12-01', account_type: 'asset' },
+  { transaction_no: 2, account_code: 'CA102', description: 'Asset example', debit: 0, credit: 300, date: '2024-12-02', account_type: 'asset' },
+  { transaction_no: 2, account_code: 'CA103', description: 'Asset example', debit: 0, credit: 2000, date: '2024-12-03', account_type: 'asset' },
+  { transaction_no: 3, account_code: 'CB103', description: 'Asset example', debit: 0, credit: 500, date: '2024-12-03', account_type: 'asset' },
+  { transaction_no: 3, account_code: 'CL103', description: 'Liabities example', debit: 100, credit: 0, date: '2024-12-03', account_type: 'liabilities' },
+  { transaction_no: 1, account_code: 'EX103', description: 'Expense example', debit: 1000, credit: 0, date: '2024-12-03', account_type: 'expense' },
+  { transaction_no: 3, account_code: 'EX103', description: 'Equity example', debit: 500, credit: 0, date: '2024-12-03', account_type: 'equity' },
+  { transaction_no: 3, account_code: 'SC103', description: 'Equity example', debit: 500, credit: 0, date: '2024-12-03', account_type: 'equity' },
+  { transaction_no: 4, account_code: 'PL103', description: 'Profit Example', debit: 500, credit: 0, date: '2024-12-03', account_type: 'profit' },
+  { transaction_no: 5, account_code: 'SA103', description: 'Sales example', debit: 500, credit: 0, date: '2024-12-03', account_type: 'sales' },
+  { transaction_no: 6, account_code: 'TD103', description: 'Debtors example', debit: 500, credit: 0, date: '2024-12-03', account_type: 'debtors' },
+  { transaction_no: 7, account_code: 'TC103', description: 'Creditors example', debit: 500, credit: 0, date: '2024-12-03', account_type: 'creditors' },
 ];
 
 // Initialize the main database
@@ -51,7 +60,7 @@ async function initializeMainDb() {
 // Add a company and initialize its database
 async function addCompany(name) {
   return new Promise((resolve, reject) => {
-    const relativeDbPath = `Com_database/${name.replace(/\s+/g, '_').toLowerCase()}.db`;
+    const relativeDbPath = `company_database/${name.replace(/\s+/g, '_').toLowerCase()}.db`;
     const absoluteDbPath = path.join(__dirname, relativeDbPath);
 
     // Add company to the main database
@@ -63,6 +72,7 @@ async function addCompany(name) {
       }
 
       // Initialize the company's database immediately
+      console.log(absoluteDbPath)
       initializeCompanyDb(absoluteDbPath)
         .then(() => {
           insertStmt.finalize();
@@ -89,7 +99,9 @@ function initializeCompanyDb(dbPath) {
           account_code TEXT NOT NULL,
           description TEXT,
           debit REAL DEFAULT 0,
-          credit REAL DEFAULT 0
+          credit REAL DEFAULT 0,
+          date TEXT DEFAULT CURRENT_DATE,
+          account_type TEXT NOT NULL
         )
       `,
         (err) => {
@@ -118,8 +130,8 @@ function initializeCompanyDb(dbPath) {
 async function populateCompanyDb(companyDb) {
   return new Promise((resolve, reject) => {
     const insertStmt = companyDb.prepare(`
-      INSERT INTO transactions (transaction_no, account_code, description, debit, credit)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO transactions (transaction_no, account_code, description, debit, credit, date, account_type)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
 
     sampleTransactions.forEach((transaction) => {
@@ -128,7 +140,9 @@ async function populateCompanyDb(companyDb) {
         transaction.account_code,
         transaction.description,
         transaction.debit,
-        transaction.credit
+        transaction.credit,
+        transaction.date,
+        transaction.account_type
       );
     });
 
@@ -149,11 +163,11 @@ async function getTransactions(companyId) {
     });
   });
 
-  const absolutePath = path.join(__dirname, relativePath);
+  const absolutePath = path.join(databaseFolder, relativePath);
   const companyDb = new sqlite3.Database(absolutePath);
 
   return new Promise((resolve, reject) => {
-    companyDb.all(`SELECT * FROM transactions`, (err, rows) => {
+    companyDb.all(`SELECT * FROM transactions ORDER BY date DESC`, (err, rows) => {
       companyDb.close();
       if (err) reject(err);
       else resolve(rows);
