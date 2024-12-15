@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
-const { addCompany, getCompanies, getTransactions } = require('./database/database');
+const { addCompany, getCompanies, getTransactions, getAccounts } = require('./database/database');
 
 const isMac = process.platform == 'darwin';
 const isDev = process.env.NODE_ENV != 'development';
@@ -86,7 +86,6 @@ ipcMain.handle('get-company-name', async (event, companyId) => {
   }
 });
 
-
 ipcMain.handle('get-transactions', async (event, companyId) => {
   try {
     const transactions = await getTransactions(companyId);
@@ -97,6 +96,14 @@ ipcMain.handle('get-transactions', async (event, companyId) => {
   }
 });
 
+ipcMain.handle('get-accounts', async (event, companyId) => {
+  try {
+    return await getAccounts(companyId); // Function to fetch accounts
+  } catch (error) {
+    console.error('Error fetching accounts:', error);
+    throw error;
+  }
+});
 
 // starting the app
 app.whenReady().then(() => {

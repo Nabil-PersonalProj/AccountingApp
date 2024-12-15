@@ -92,7 +92,7 @@ function initializeCompanyDatabase(dbPath) {
 // Add a transaction to a company's database
 function addTransaction(companyDbPath, transaction) {
   const db = new sqlite3.Database(companyDbPath);
-  const { transaction_no, account_code, description, debit, credit } = transaction;
+  const { transaction_no, account_code, description, debit, credit, date, account_type } = transaction;
 
   return new Promise((resolve, reject) => {
     const query = `
@@ -129,9 +129,38 @@ function getTransactions(companyId) {
   });
 }
 
+async function getAccounts(companyId) {
+  const query = `SELECT db_path FROM companies WHERE id = ?`;
+
+  const relativePath = await new Promise((resolve, reject) => {
+    mainDb.get(query, [companyId], (err, row) => {
+      if (err) reject(err);
+      else resolve(row.db_path);
+    });
+  });
+
+  const absolutePath = path.join(__dirname, relativePath);
+  const companyDb = new sqlite3.Database(absolutePath);
+
+  return new Promise((resolve, reject) => {
+    companyDb.all(
+      `SELECT account_code, description, SUM(debit) AS debit, SUM(credit) AS credit
+       FROM transactions
+       GROUP BY account_code, description`,
+      (err, rows) => {
+        companyDb.close();
+        if (err) reject(err);
+        else resolve(rows);
+      }
+    );
+  });
+}
+
+
 module.exports = {
   addCompany,
   getCompanies,
   addTransaction,
   getTransactions,
+  getAccounts
 };

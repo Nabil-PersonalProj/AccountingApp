@@ -3,18 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Loading....</title>
+  <title>Loading...</title>
   <link rel="stylesheet" href="../../assets/companyWindow.css">
 </head>
 <body>
   <div class="container">
+    <!-- Header Section -->
     <header class="app-header">
-      <h1 id="companyName">Loading....</h1>
+      <h1 id="companyName">Loading...</h1>
     </header>
 
-    <section id="transactions">
-      <!-- Transactions table will be dynamically populated here -->
-    </section>
+    <!-- Tab Navigation -->
+    <nav class="tab-navigation">
+      <button class="tab-button active">Main Transaction</button>
+      <button class="tab-button">All Transactions</button>
+      <button class="tab-button">All Accounts</button>
+    </nav>
+
+    <!-- Tab Content -->
+    <section id="main-tab" class="tab-content"></section>
+    <section id="transactions-tab" class="tab-content" style="display: none;"></section>
+    <section id="accounts-tab" class="tab-content" style="display: none;"></section>
   </div>
 
   <script src="../companyRenderer.js"></script>

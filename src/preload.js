@@ -8,4 +8,5 @@ contextBridge.exposeInMainWorld('api', {
     getCompanyName: (companyId) => ipcRenderer.invoke('get-company-name', companyId),
     getTransactions: (companyId) => ipcRenderer.invoke('get-transactions', companyId),
     loadTransactions: (callback) => ipcRenderer.on('load-transactions', (event, companyId) => callback(companyId)),
+    getAccounts: (companyId) => ipcRenderer.invoke('get-accounts', companyId),
 });
