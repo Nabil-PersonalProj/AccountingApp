@@ -105,6 +105,15 @@ ipcMain.handle('get-accounts', async (event, companyId) => {
   }
 });
 
+ipcMain.handle('get-last-transaction', async (event, companyId) => {
+  try {
+    return await getLastTransaction(companyId);
+  } catch (error) {
+    console.error('Error fetching last transaction:', error);
+    throw error;
+  }
+});
+
 // starting the app
 app.whenReady().then(() => {
   createMainWindow();

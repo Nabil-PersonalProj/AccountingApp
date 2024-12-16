@@ -156,11 +156,32 @@ async function getAccounts(companyId) {
   });
 }
 
+function getLastTransaction(companyId) {
+  return new Promise((resolve, reject) => {
+    mainDb.get(`SELECT db_path FROM companies WHERE id = ?`, [companyId], (err, row) => {
+      if (err) return reject(`Error fetching db_path for company ID ${companyId}: ${err.message}`);
+      if (!row) return reject(`No company found with ID ${companyId}`);
+
+      // Construct the path to the company's database
+      const companyDbPath = path.join(__dirname, row.db_path);
+
+      const companyDb = new sqlite3.Database(companyDbPath);
+      companyDb.get(
+        `SELECT * FROM transactions ORDER BY transaction_no DESC LIMIT 1`, // Sort by transaction_no
+        (err, lastTransaction) => {
+          companyDb.close();
+          if (err) return reject(`Error fetching last transaction: ${err.message}`);
+          resolve(lastTransaction); // Return only the last transaction
+        }
+      );
+    });
+  });
+}
 
 module.exports = {
   addCompany,
   getCompanies,
-  addTransaction,
   getTransactions,
-  getAccounts
+  getLastTransaction, 
+  getAccounts,
 };
