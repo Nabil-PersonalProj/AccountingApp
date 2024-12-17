@@ -1,9 +1,9 @@
 window.addEventListener('DOMContentLoaded', () => {
   const tabs = document.querySelectorAll('.tab-button');
-  const tabSections = document.querySelectorAll('.tab-content');
+  const sections = document.querySelectorAll('.tab-content');
   let currentCompanyId = null;
 
-  // Event listener for the company ID sent from the main process
+  // Load company data when the page opens
   window.api.loadTransactions(async (companyId) => {
     try {
       currentCompanyId = companyId;
@@ -14,168 +14,84 @@ window.addEventListener('DOMContentLoaded', () => {
       const transactions = await window.api.getTransactions(companyId);
       const accounts = await window.api.getAccounts(companyId);
 
-      loadMainTab(transactions); // Load the last transaction into Main Tab
-      loadTransactionsTab(transactions); // Load all transactions
-      loadAccountsTab(accounts); // Load all accounts
+      loadMainTab(transactions);
+      loadTransactionsTab(transactions);
+      loadAccountsTab(accounts);
 
-      setupTabNavigation(); // Enable tab navigation
+      setupTabNavigation();
     } catch (error) {
-      console.error('Error loading company data:', error);
+      console.error('Error loading data:', error);
     }
   });
 
-  // Update the window title and header with the company's name
   function updateTitle(companyName) {
-    document.title = `${companyName}`;
-    const header = document.getElementById('companyName');
-    header.textContent = `${companyName}`;
+    document.title = companyName;
+    document.getElementById('companyName').textContent = companyName;
   }
 
-  // Main Tab: Show the last transaction (sorted by transaction_no)
   function loadMainTab(transactions) {
-    const section = document.getElementById('main-tab');
-    section.innerHTML = ''; // Clear content
+    const transactionBody = document.getElementById('main-transaction-body');
+    const transactionNoInfo = document.getElementById('last-transaction-no');
 
     if (!transactions || transactions.length === 0) {
-      section.innerHTML = '<p>No transactions available.</p>';
+      transactionBody.innerHTML = '<tr><td colspan="6">No transactions available.</td></tr>';
+      transactionNoInfo.textContent = 'Last Transaction No: None';
       return;
     }
 
-    // Find the last transaction based on transaction_no
-    const lastTransaction = transactions.reduce((latest, current) => {
-      return current.transaction_no > latest.transaction_no ? current : latest;
-    }, transactions[0]);
+    const lastTransaction = transactions.reduce((latest, current) => 
+      current.transaction_no > latest.transaction_no ? current : latest, transactions[0]);
 
-    const table = `
-      <table class="transactions-table">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Transaction No</th>
-            <th>Account Code</th>
-            <th>Description</th>
-            <th>Debit</th>
-            <th>Credit</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>${lastTransaction.date}</td>
-            <td>${lastTransaction.transaction_no}</td>
-            <td>${lastTransaction.account_code}</td>
-            <td>${lastTransaction.description}</td>
-            <td>${lastTransaction.debit}</td>
-            <td>${lastTransaction.credit}</td>
-          </tr>
-        </tbody>
-      </table>
+    transactionNoInfo.textContent = `Last Transaction No: ${lastTransaction.transaction_no}`;
+    transactionBody.innerHTML = `
+      <tr>
+        <td>${lastTransaction.date}</td>
+        <td>${lastTransaction.transaction_no}</td>
+        <td>${lastTransaction.account_code}</td>
+        <td>${lastTransaction.description}</td>
+        <td>${lastTransaction.debit}</td>
+        <td>${lastTransaction.credit}</td>
+      </tr>
     `;
-
-    section.innerHTML = table;
   }
 
-  // Transactions Tab: Show all transactions in a table
   function loadTransactionsTab(transactions) {
-    const section = document.getElementById('transactions-tab');
-    section.innerHTML = ''; // Clear content
-
-    if (!transactions || transactions.length === 0) {
-      section.innerHTML = '<p>No transactions found.</p>';
-      return;
-    }
-
-    const table = `
-      <table class="transactions-table">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Transaction No</th>
-            <th>Account Code</th>
-            <th>Description</th>
-            <th>Debit</th>
-            <th>Credit</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${transactions
-            .map(
-              (t) => `
-            <tr>
-              <td>${t.date}</td>
-              <td>${t.transaction_no}</td>
-              <td>${t.account_code}</td>
-              <td>${t.description}</td>
-              <td>${t.debit}</td>
-              <td>${t.credit}</td>
-            </tr>
-          `
-            )
-            .join('')}
-        </tbody>
-      </table>
-    `;
-
-    section.innerHTML = table;
+    const transactionsBody = document.getElementById('transactions-body');
+    transactionsBody.innerHTML = transactions.map(t => `
+      <tr>
+        <td>${t.date}</td>
+        <td>${t.transaction_no}</td>
+        <td>${t.account_code}</td>
+        <td>${t.description}</td>
+        <td>${t.debit}</td>
+        <td>${t.credit}</td>
+      </tr>
+    `).join('');
   }
 
-  // Accounts Tab: Show all accounts with debit and credit summary
   function loadAccountsTab(accounts) {
-    const section = document.getElementById('accounts-tab');
-    section.innerHTML = ''; // Clear content
-
-    if (!accounts || accounts.length === 0) {
-      section.innerHTML = '<p>No accounts found for this company.</p>';
-      return;
-    }
-
-    const table = `
-      <table class="accounts-table">
-        <thead>
-          <tr>
-            <th>Account Code</th>
-            <th>Description</th>
-            <th>Debit</th>
-            <th>Credit</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${accounts
-            .map(
-              (a) => `
-            <tr>
-              <td>${a.account_code}</td>
-              <td>${a.description}</td>
-              <td>${a.debit}</td>
-              <td>${a.credit}</td>
-            </tr>
-          `
-            )
-            .join('')}
-        </tbody>
-      </table>
-    `;
-
-    section.innerHTML = table;
+    const accountsBody = document.getElementById('accounts-body');
+    accountsBody.innerHTML = accounts.map(a => `
+      <tr>
+        <td>${a.account_code}</td>
+        <td>${a.description}</td>
+        <td>${a.debit}</td>
+        <td>${a.credit}</td>
+      </tr>
+    `).join('');
   }
 
-  // Tab Navigation: Enable switching between tabs
   function setupTabNavigation() {
-    const tabs = document.querySelectorAll('.tab-button');
-    const sections = document.querySelectorAll('.tab-content');
-
     tabs.forEach((tab, index) => {
       tab.addEventListener('click', () => {
-        // Hide all sections and deactivate all tabs
-        sections.forEach((section) => (section.style.display = 'none'));
+        sections.forEach((section) => section.style.display = 'none');
         tabs.forEach((btn) => btn.classList.remove('active'));
 
-        // Show the selected tab content and mark the button as active
         sections[index].style.display = 'block';
         tab.classList.add('active');
       });
     });
 
-    // Default: Activate the first tab
-    tabs[0].click();
+    tabs[0].click(); // Default to Main Tab
   }
 });

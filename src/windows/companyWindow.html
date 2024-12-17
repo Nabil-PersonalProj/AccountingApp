@@ -3,12 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Loading...</title>
+  <title>Company Transactions</title>
   <link rel="stylesheet" href="../../assets/companyWindow.css">
 </head>
 <body>
   <div class="container">
-    <!-- Header Section -->
     <header class="app-header">
       <h1 id="companyName">Loading...</h1>
     </header>
@@ -19,10 +18,63 @@
       <button class="tab-button">All Transactions</button>
       <button class="tab-button">All Accounts</button>
     </nav>
-    
-    <section id="main-tab" class="tab-content"></section>
-    <section id="transactions-tab" class="tab-content" style="display: none;"></section>
-    <section id="accounts-tab" class="tab-content" style="display: none;"></section>    
+
+    <!-- Main Tab -->
+    <section id="main-tab" class="tab-content active">
+      <div class="main-header">
+        <h2>Main Transaction</h2>
+        <span id="last-transaction-no" class="transaction-info">Last Transaction No: Loading...</span>
+      </div>
+      <table class="transactions-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Transaction No</th>
+            <th>Account Code</th>
+            <th>Description</th>
+            <th>Debit</th>
+            <th>Credit</th>
+          </tr>
+        </thead>
+        <tbody id="main-transaction-body">
+          <!-- Last transaction will appear here -->
+        </tbody>
+      </table>
+    </section>
+
+    <!-- All Transactions Tab -->
+    <section id="transactions-tab" class="tab-content" style="display: none;">
+      <h2>All Transactions</h2>
+      <table class="transactions-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Transaction No</th>
+            <th>Account Code</th>
+            <th>Description</th>
+            <th>Debit</th>
+            <th>Credit</th>
+          </tr>
+        </thead>
+        <tbody id="transactions-body"></tbody>
+      </table>
+    </section>
+
+    <!-- All Accounts Tab -->
+    <section id="accounts-tab" class="tab-content" style="display: none;">
+      <h2>All Accounts</h2>
+      <table class="accounts-table">
+        <thead>
+          <tr>
+            <th>Account Code</th>
+            <th>Description</th>
+            <th>Debit</th>
+            <th>Credit</th>
+          </tr>
+        </thead>
+        <tbody id="accounts-body"></tbody>
+      </table>
+    </section>
   </div>
 
   <script src="../companyRenderer.js"></script>
