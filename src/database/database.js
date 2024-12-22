@@ -178,10 +178,32 @@ function getLastTransaction(companyId) {
   });
 }
 
+function searchTransaction(companyId, searchQuery) {
+  return new Promise((resolve, reject) => {
+    mainDb.get(`SELECT db_path FROM companies WHERE id = ?`, [companyId], (err, row) => {
+      if (err) return reject(err);
+      const companyDbPath = path.join(__dirname, row.db_path);
+      const companyDb = new sqlite3.Database(companyDbPath);
+
+      const query = `
+        SELECT * FROM transactions 
+        WHERE transaction_no = ?
+      `;
+      companyDb.all(query, [searchQuery], (err, rows) => {
+        companyDb.close();
+        if (err) return reject(err);
+        resolve(rows);
+      });
+    });
+  });
+}
+
+
 module.exports = {
   addCompany,
   getCompanies,
   getTransactions,
   getLastTransaction, 
   getAccounts,
+  searchTransaction,
 };

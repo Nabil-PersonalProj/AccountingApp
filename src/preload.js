@@ -10,4 +10,5 @@ contextBridge.exposeInMainWorld('api', {
     loadTransactions: (callback) => ipcRenderer.on('load-transactions', (event, companyId) => callback(companyId)),
     getLastTransaction: (companyId) => ipcRenderer.invoke('get-last-transaction', companyId),
     getAccounts: (companyId) => ipcRenderer.invoke('get-accounts', companyId),
+    searchTransaction: (companyId, query) => ipcRenderer.invoke('search-transaction', companyId, query),
 });

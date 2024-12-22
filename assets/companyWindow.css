@@ -48,6 +48,7 @@ body {
 table {
   width: 100%;
   border-collapse: collapse;
+  margin-top: 20px; /* Added spacing for tables */
 }
 
 th, td {
@@ -58,4 +59,57 @@ th, td {
 
 th {
   background-color: #f4f4f4;
+}
+
+tr:hover {
+  background-color: #f9f9f9; /* Highlight row on hover */
+}
+
+/* Search Container */
+#transaction-selector {
+  margin: 20px 0;
+  display: flex;
+  gap: 10px;
+}
+
+#transactionSearch {
+  padding: 8px; /* Increased for consistency */
+  flex: 1;
+  font-size: 1rem; /* Improved readability */
+}
+
+#searchTransactionBtn {
+  padding: 8px 15px; /* Increased for consistency */
+  background-color: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease; /* Smooth hover transition */
+}
+
+#searchTransactionBtn:hover {
+  background-color: #0056b3;
+}
+
+#searchTransactionBtn:focus {
+  outline: 2px solid #0056b3; /* Visual feedback for focus */
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 600px) {
+  .container {
+    width: 95%;
+  }
+
+  th, td {
+    font-size: 0.9rem; /* Adjust table font size for smaller screens */
+  }
+
+  #transactionSearch {
+    font-size: 0.9rem;
+  }
+
+  #searchTransactionBtn {
+    font-size: 0.9rem;
+  }
 }

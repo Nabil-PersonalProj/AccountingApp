@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
-const { addCompany, getCompanies, getTransactions, getAccounts } = require('./database/database');
+const { addCompany, getCompanies, getTransactions, getAccounts, searchTransaction } = require('./database/database');
 
 const isMac = process.platform == 'darwin';
 const isDev = process.env.NODE_ENV != 'development';
@@ -113,6 +113,16 @@ ipcMain.handle('get-last-transaction', async (event, companyId) => {
     throw error;
   }
 });
+
+ipcMain.handle('search-transaction', async (event, companyId, query) => {
+  try {
+    return await searchTransaction(companyId, query);
+  } catch (error) {
+    console.error('Error searching transaction:' , error);
+    throw error;
+  }
+});
+
 
 // starting the app
 app.whenReady().then(() => {
