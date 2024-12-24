@@ -1,6 +1,7 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
+const { resolve } = require('dns');
 
 // Ensure the `database/` folder exists
 const databaseFolder = path.join(__dirname, 'company_database');
@@ -69,7 +70,7 @@ function initializeCompanyDatabase(dbPath) {
       db.run(`
         CREATE TABLE IF NOT EXISTS transactions (
           transaction_id INTEGER PRIMARY KEY AUTOINCREMENT,
-          transaction_no INTEGER,
+          transaction_no INTEGER NOT NULL,
           account_code TEXT NOT NULL,
           description TEXT,
           debit REAL DEFAULT 0,
@@ -90,23 +91,63 @@ function initializeCompanyDatabase(dbPath) {
 }
 
 // Add a transaction to a company's database
-function addTransaction(companyDbPath, transaction) {
+async function addTransaction(companyId, transaction) {
+
+  // Debug: Log raw transaction data
+  console.log('Raw Transaction Data Received:', transaction);
+  console.log('CompanyId:', companyId);
+
+  const query = `SELECT db_path FROM companies WHERE id = ?`;
+
+  const relativePath = await new Promise((resolve, reject) => {
+    mainDb.get(query, [companyId], (err, row) => {
+      if (err) reject(err);
+      else resolve(row.db_path);
+    });
+  });
+  
+  console.log('relative path: ', relativePath);
+
+  const companyDbPath = path.join(__dirname, relativePath);
+  console.log('absolute path: ', companyDbPath);
   const db = new sqlite3.Database(companyDbPath);
-  const { transaction_no, account_code, description, debit, credit, date, account_type } = transaction;
+
+  const {
+      transaction_no,
+      account_code,
+      description,
+      debit,
+      credit,
+      transaction_date,
+      account_type
+    } = transaction;
 
   return new Promise((resolve, reject) => {
     const query = `
       INSERT INTO transactions (transaction_no, account_code, description, debit, credit, date, account_type)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
-    db.run(query, [transaction_no, account_code, description, debit, credit, date, account_type], function (err) {
-      if (err) {
+    console.log('Executing SQL Query:', query, [
+      transaction_no,
+      account_code,
+      description,
+      debit,
+      credit,
+      transaction_date,
+      account_type
+    ]);
+    db.run(
+      query,
+      [transaction_no, account_code, description, debit, credit, transaction_date, account_type],
+      function (err) {
+        if (err) {
+          db.close();
+          return reject(err);
+        }
         db.close();
-        return reject(err);
+        resolve(this.lastID);
       }
-      db.close();
-      resolve(this.lastID);
-    });
+    );
   });
 }
 
@@ -199,6 +240,7 @@ function searchTransaction(companyId, searchQuery) {
 }
 
 
+
 module.exports = {
   addCompany,
   getCompanies,
@@ -206,4 +248,5 @@ module.exports = {
   getLastTransaction, 
   getAccounts,
   searchTransaction,
+  addTransaction,
 };

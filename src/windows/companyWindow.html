@@ -22,8 +22,10 @@
     <!-- Main Tab -->
     <section id="main-tab" class="tab-content active">
       <div class="main-header">
-        <h2>Main Transaction</h2>
-        <span id="last-transaction-no" class="transaction-info">Last Transaction No: Loading...</span>
+        <div class="transaction-info-container">
+          <span id="last-transaction-no" class="transaction-info">Last Transaction No: Loading...</span>
+          <button id="addTransactionBtn" class="add-button">Add Transaction</button>
+        </div>
       </div>
 
       <!-- Search Bar -->
@@ -32,7 +34,7 @@
         <input type="text" id="transactionSearch" placeholder="Enter transaction no or description">
         <button id="searchTransactionBtn">Search</button>
       </div>
-       
+
       <table class="transactions-table">
         <thead>
           <tr>
@@ -49,6 +51,61 @@
         </tbody>
       </table>
     </section>
+
+    <!-- Add Transaction Modal -->
+    <div id="addTransactionModal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <h2>Add New Transaction</h2>
+        <div class="form-group">
+          <label for="transactionType">Transaction Type:</label>
+          <select id="transactionType" required>
+            <option value="">Select Transaction Type</option>
+            <option value="asset">Asset</option>
+            <option value="liabilities">Liabilities</option>
+            <option value="expense">Expense</option>
+            <option value="equity">Equity</option>
+            <option value="profit">Profit</option>
+            <option value="sales">Sales</option>
+            <option value="debtors">Debtors</option>
+            <option value="creditors">Creditors</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="accountPrefix">Account Prefix:</label>
+          <select id="accountPrefix" required>
+            <option value="">Select Account Prefix</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="accountCode">Account Code:</label>
+          <input type="text" id="accountCode" required placeholder="Enter account code">
+        </div>
+        <div class="form-group">
+          <label for="transactionNo">Transaction No:</label>
+          <input type="number" id="transactionNo" required placeholder="Enter transaction number">
+        </div>
+        <div class="form-group">
+          <label for="date">Date:</label>
+          <input type="date" id="date" required>
+        </div>
+        <div class="form-group">
+          <label for="description">Description:</label>
+          <textarea id="description" placeholder="Enter description"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="debit">Debit:</label>
+          <input type="number" id="debit" step="0.01" placeholder="Enter debit amount">
+        </div>
+        <div class="form-group">
+          <label for="credit">Credit:</label>
+          <input type="number" id="credit" step="0.01" placeholder="Enter credit amount">
+        </div>
+        <div class="form-actions">
+          <button id="saveTransactionBtn" class="add-button">Save</button>
+          <button id="cancelTransactionBtn" class="filter-button">Cancel</button>
+        </div>
+      </div>
+    </div>
 
     <!-- All Transactions Tab -->
     <section id="transactions-tab" class="tab-content" style="display: none;">

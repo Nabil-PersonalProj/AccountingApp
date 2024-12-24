@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
-const { addCompany, getCompanies, getTransactions, getAccounts, searchTransaction } = require('./database/database');
+const { addCompany, getCompanies, getTransactions, getAccounts, searchTransaction, addTransaction } = require('./database/database');
 
 const isMac = process.platform == 'darwin';
 const isDev = process.env.NODE_ENV != 'development';
@@ -8,8 +8,8 @@ const isDev = process.env.NODE_ENV != 'development';
 // main window
 function createMainWindow() {
   const mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1000,
+    height: 800,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -28,8 +28,8 @@ function createMainWindow() {
 // Create company window
 function createCompanyWindow(companyId) {
   const companyWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1000,
+    height: 800,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -123,10 +123,26 @@ ipcMain.handle('search-transaction', async (event, companyId, query) => {
   }
 });
 
+ipcMain.handle('add-transaction', async (event, companyId, transaction) => {
+  console.log('running add-transaction')
+  try {
+    console.log('receiving transaction');
+    console.log('Transaction Received in Main Process:', transaction);
+
+    const result = await addTransaction(companyId, transaction);
+    return result;
+  } catch (error) {
+    console.log(error)
+    console.error('Error adding transaction:', error);
+    throw error;
+  }
+});
+
 
 // starting the app
 app.whenReady().then(() => {
   createMainWindow();
+  console.log('App is ready')
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

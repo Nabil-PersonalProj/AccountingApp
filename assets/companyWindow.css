@@ -34,7 +34,7 @@ body {
 }
 
 .tab-button.active {
-  background-color: #8a45ec;
+  background-color: #3359ac;
   color: white;
   font-weight: bold;
   border-radius: 8px 8px 0 0;
@@ -45,10 +45,37 @@ body {
   display: none;
 }
 
+/* Main Header Styling */
+.main-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.transaction-info {
+  font-weight: bold;
+}
+
+.add-button {
+  padding: 8px 15px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.add-button:hover {
+  background-color: #0056b3;
+}
+
+/* Table Styling */
 table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 20px; /* Added spacing for tables */
+  margin-top: 20px;
 }
 
 th, td {
@@ -112,4 +139,89 @@ tr:hover {
   #searchTransactionBtn {
     font-size: 0.9rem;
   }
+}
+
+/* Modal Styling */
+.modal {
+  display: none; /* Hidden by default */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000; /* Above other elements */
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  width: 400px;
+}
+
+.modal-overlay {
+  display: none; /* Hidden by default */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999; /* Below modal but above rest */
+}
+
+.modal.show,
+.modal-overlay.show {
+  display: block;
+}
+
+/* Form Group Styling */
+.form-group {
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+/* Form Actions Styling */
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+}
+
+.form-actions button {
+  padding: 10px 15px;
+  font-size: 14px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+}
+
+.add-button {
+  background-color: #007bff;
+  color: white;
+}
+
+.add-button:hover {
+  background-color: #0056b3;
+}
+
+.filter-button {
+  background-color: #ccc;
+  color: black;
+}
+
+.filter-button:hover {
+  background-color: #aaa;
 }

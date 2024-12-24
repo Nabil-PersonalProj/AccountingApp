@@ -39,3 +39,8 @@ future functions:
 adding types of accounts
 
 add date to table
+
+
+
+
+add transaction must be a pair preferable table format
