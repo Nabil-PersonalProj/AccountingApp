@@ -55,57 +55,67 @@
     <!-- Add Transaction Modal -->
     <div id="addTransactionModal" class="modal" style="display: none;">
       <div class="modal-content">
-        <h2>Add New Transaction</h2>
-        <div class="form-group">
-          <label for="transactionType">Transaction Type:</label>
-          <select id="transactionType" required>
-            <option value="">Select Transaction Type</option>
-            <option value="asset">Asset</option>
-            <option value="liabilities">Liabilities</option>
-            <option value="expense">Expense</option>
-            <option value="equity">Equity</option>
-            <option value="profit">Profit</option>
-            <option value="sales">Sales</option>
-            <option value="debtors">Debtors</option>
-            <option value="creditors">Creditors</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="accountPrefix">Account Prefix:</label>
-          <select id="accountPrefix" required>
-            <option value="">Select Account Prefix</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="accountCode">Account Code:</label>
-          <input type="text" id="accountCode" required placeholder="Enter account code">
-        </div>
+        <h2>Add New Transactions</h2>
+    
         <div class="form-group">
           <label for="transactionNo">Transaction No:</label>
           <input type="number" id="transactionNo" required placeholder="Enter transaction number">
         </div>
         <div class="form-group">
-          <label for="date">Date:</label>
-          <input type="date" id="date" required>
+          <label for="transactionDate">Date:</label>
+          <input type="date" id="transactionDate" required>
         </div>
-        <div class="form-group">
-          <label for="description">Description:</label>
-          <textarea id="description" placeholder="Enter description"></textarea>
-        </div>
-        <div class="form-group">
-          <label for="debit">Debit:</label>
-          <input type="number" id="debit" step="0.01" placeholder="Enter debit amount">
-        </div>
-        <div class="form-group">
-          <label for="credit">Credit:</label>
-          <input type="number" id="credit" step="0.01" placeholder="Enter credit amount">
-        </div>
+    
+        <table class="transaction-table">
+          <thead>
+            <tr>
+              <th>Account Type</th>
+              <th>Account Prefix</th>
+              <th>Account Code</th>
+              <th>Description</th>
+              <th>Debit</th>
+              <th>Credit</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="transactionRows">
+            <tr>
+              <td>
+                <select class="transactionType" required>
+                  <option value="">Select Type</option>
+                  <option value="asset">Asset</option>
+                  <option value="liabilities">Liabilities</option>
+                  <option value="expense">Expense</option>
+                  <option value="equity">Equity</option>
+                  <option value="profit">Profit</option>
+                  <option value="sales">Sales</option>
+                  <option value="debtors">Debtors</option>
+                  <option value="creditors">Creditors</option>
+                </select>
+              </td>
+              <td>
+                <select class="accountPrefix" required>
+                  <option value="">Select Prefix</option>
+                </select>
+              </td>
+              <td><input type="text" class="accountCode" required placeholder="Code"></td>
+              <td><input type="text" class="description" placeholder="Description"></td>
+              <td><input type="number" class="debit" step="0.01" placeholder="Debit"></td>
+              <td><input type="number" class="credit" step="0.01" placeholder="Credit"></td>
+              <td><button class="remove-row-btn">Remove</button></td>
+            </tr>
+          </tbody>
+        </table>
+    
+        <button id="addRowBtn" class="add-button">Add Row</button>
+    
         <div class="form-actions">
           <button id="saveTransactionBtn" class="add-button">Save</button>
           <button id="cancelTransactionBtn" class="filter-button">Cancel</button>
         </div>
       </div>
     </div>
+    
 
     <!-- All Transactions Tab -->
     <section id="transactions-tab" class="tab-content" style="display: none;">

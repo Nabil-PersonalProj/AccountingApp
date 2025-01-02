@@ -1,4 +1,7 @@
+// Wait for the DOM content to load
 window.addEventListener('DOMContentLoaded', () => {
+
+  // Retrieve all relevant DOM elements
   const tabs = document.querySelectorAll('.tab-button');
   const sections = document.querySelectorAll('.tab-content');
 
@@ -6,8 +9,11 @@ window.addEventListener('DOMContentLoaded', () => {
   const saveTransactionBtn = document.getElementById('saveTransactionBtn');
   const cancelTransactionBtn = document.getElementById('cancelTransactionBtn');
   const addTransactionModal = document.getElementById('addTransactionModal');
-  const transactionTypeElement = document.getElementById('transactionType');
-  const accountPrefixElement = document.getElementById('accountPrefix');
+  const addRowBtn = document.getElementById('addRowBtn');
+
+  const searchTransactionBtn = document.getElementById('searchTransactionBtn');
+  const transactionSearch = document.getElementById('transactionSearch');
+  const transactionBody = document.getElementById('main-transaction-body');
 
   // Prefix mapping for transaction types
   const prefixes = {
@@ -21,12 +27,7 @@ window.addEventListener('DOMContentLoaded', () => {
     creditors: ['TC']
   };
 
-  const searchTransactionBtn = document.getElementById('searchTransactionBtn');
-  const transactionSearch = document.getElementById('transactionSearch');
-  const transactionBody = document.getElementById('main-transaction-body');
-
-  let currentCompanyId = null;
-  // let lastSearchQuery = null; // Store the last successful search query to prevent redundant searches
+  let currentCompanyId = null; // Store the company ID loaded in the UI
 
   // Load company data when the page opens
   window.api.loadTransactions(async (companyId) => {
@@ -50,33 +51,38 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Update the title of the company window
   function updateTitle(companyName) {
     document.title = companyName;
     document.getElementById('companyName').textContent = companyName;
   }
 
+  // Load the main tab with the latest transactions
   function loadMainTab(transactions) {
     if (!transactions || transactions.length === 0) {
       transactionBody.innerHTML = '<tr><td colspan="6">No transactions available.</td></tr>';
       return;
     }
 
-    const lastTransaction = transactions.reduce((latest, current) =>
-      current.transaction_no > latest.transaction_no ? current : latest, transactions[0]);
+    // Filter transactions to only include the latest transaction number
+    const latestTransactionNo = Math.max(...transactions.map(t => t.transaction_no));
+    const filteredTransactions = transactions.filter(t => t.transaction_no === latestTransactionNo);
 
-    document.getElementById('last-transaction-no').textContent = `Last Transaction No: ${lastTransaction.transaction_no}`;
-    transactionBody.innerHTML = `
+    document.getElementById('last-transaction-no').textContent = `Last Transaction No: ${latestTransactionNo}`;
+
+    transactionBody.innerHTML = filteredTransactions.map(transaction => `
       <tr>
-        <td>${lastTransaction.date}</td>
-        <td>${lastTransaction.transaction_no}</td>
-        <td>${lastTransaction.account_code}</td>
-        <td>${lastTransaction.description}</td>
-        <td>${lastTransaction.debit}</td>
-        <td>${lastTransaction.credit}</td>
+        <td>${transaction.date}</td>
+        <td>${transaction.transaction_no}</td>
+        <td>${transaction.account_code}</td>
+        <td>${transaction.description}</td>
+        <td>${transaction.debit}</td>
+        <td>${transaction.credit}</td>
       </tr>
-    `;
+    `).join('');
   }
 
+  // Load all transactions into the All Transactions tab
   function loadTransactionsTab(transactions) {
     const transactionsBody = document.getElementById('transactions-body');
     if (!transactions || transactions.length === 0) {
@@ -95,6 +101,7 @@ window.addEventListener('DOMContentLoaded', () => {
     `).join('');
   }
 
+  // Load accounts data into the All Accounts tab
   function loadAccountsTab(accounts) {
     const accountsBody = document.getElementById('accounts-body');
     if (!accounts || accounts.length === 0) {
@@ -111,86 +118,158 @@ window.addEventListener('DOMContentLoaded', () => {
     `).join('');
   }
 
-  function displayTransactionDetails(transactions) {
-    const detailsSection = document.getElementById('main-transaction-body');
-    if (!transactions || transactions.length === 0) {
-      detailsSection.innerHTML = '<tr><td colspan="6">No transactions found matching your query.</td></tr>';
-      return;
-    }
-  
-    // Display all matching transactions
-    detailsSection.innerHTML = transactions.map(transaction => `
-      <tr>
-        <td>${transaction.date}</td>
-        <td>${transaction.transaction_no}</td>
-        <td>${transaction.account_code}</td>
-        <td>${transaction.description}</td>
-        <td>${transaction.debit}</td>
-        <td>${transaction.credit}</td>
-      </tr>
-    `).join('');
-  }
-
+  // Set up tab navigation
   function setupTabNavigation() {
     tabs.forEach((tab, index) => {
       tab.addEventListener('click', () => {
-        sections.forEach((section) => section.style.display = 'none');
-        tabs.forEach((btn) => btn.classList.remove('active'));
+        sections.forEach(section => section.style.display = 'none');
+        tabs.forEach(btn => btn.classList.remove('active'));
 
         sections[index].style.display = 'block';
         tab.classList.add('active');
       });
     });
 
-    tabs[0].click(); // Default to Main Tab
+    tabs[0].click(); // Default to the main tab
   }
 
-  // Add Transaction Modal Handlers
+  // Open the Add Transaction modal
   addTransactionBtn.addEventListener('click', () => {
     addTransactionModal.style.display = 'block';
   });
 
+  // Close the Add Transaction modal and clear fields
   cancelTransactionBtn.addEventListener('click', () => {
     addTransactionModal.style.display = 'none';
+    document.getElementById('transactionRows').innerHTML = ''; // Clear all rows
+    document.getElementById('transactionNo').value = '';
+    document.getElementById('transactionDate').value = '';
   });
 
+  // Save transactions from the modal
   saveTransactionBtn.addEventListener('click', async () => {
-    const transaction = {
-      transaction_no: parseInt(document.getElementById('transactionNo').value, 10) || 0, // Integer
-      account_code: `${document.getElementById('accountPrefix').value}${document.getElementById('accountCode').value}`, // String
-      description: document.getElementById('description').value || '', // String
-      debit: parseFloat(document.getElementById('debit').value) || 0, // Float
-      credit: parseFloat(document.getElementById('credit').value) || 0, // Float
-      transaction_date: document.getElementById('date').value || '', // String
-      account_type: document.getElementById('transactionType').value || '' // String
-    };
+    const transactionNo = document.getElementById('transactionNo').value;
+    const transactionDate = document.getElementById('transactionDate').value;
 
-    // Debug the transaction data
-    console.log('Transaction Data to Send:', transaction);
+    if (!transactionNo || !transactionDate) {
+      alert('Transaction No. and Date are required!');
+      return;
+    }
 
-  
     try {
-      console.log('sending from renderer.js');
-      const result = await window.api.addTransaction(currentCompanyId, transaction); // Call to main.js
-      console.log('Transaction Added:', result);
-      alert('Transaction added successfully!');
+      const rows = Array.from(document.querySelectorAll('#transactionRows tr'));
+      const transactions = rows.map(row => {
+        const transactionType = row.querySelector('.transactionType').value;
+        const accountPrefix = row.querySelector('.accountPrefix').value;
+        const accountCode = `${accountPrefix}${row.querySelector('.accountCode').value}`;
+        const description = row.querySelector('.description').value || '';
+        const debit = parseFloat(row.querySelector('.debit').value) || 0;
+        const credit = parseFloat(row.querySelector('.credit').value) || 0;
+
+        if (!transactionType || !accountPrefix || !accountCode) {
+          alert('Please fill in all required fields in each row.');
+          throw new Error('Validation failed');
+        }
+
+        return {
+          transaction_no: transactionNo,
+          transaction_date: transactionDate,
+          account_type: transactionType,
+          account_code: accountCode,
+          description,
+          debit,
+          credit,
+        };
+      });
+
+      const totalDebit = transactions.reduce((sum, t) => sum + t.debit, 0);
+      const totalCredit = transactions.reduce((sum, t) => sum + t.credit, 0);
+
+      if (totalDebit !== totalCredit) {
+        alert('Total Debit is not equal to Total Credit. Please Adjust transactions');
+        return;
+      }
+
+      await Promise.all(
+        transactions.map(transaction => window.api.addTransaction(currentCompanyId, transaction))
+      );
+
+      alert('Transactions added successfully!');
       addTransactionModal.style.display = 'none';
-  
-      // Refresh transactions
-      const transactions = await window.api.getTransactions(currentCompanyId);
+
+      const allTransactions = await window.api.getTransactions(currentCompanyId);
       const accounts = await window.api.getAccounts(currentCompanyId);
-      loadMainTab(transactions);
+      loadMainTab(allTransactions);
+      loadTransactionsTab(allTransactions);
       loadAccountsTab(accounts);
-      loadTransactionsTab(transactions);
     } catch (error) {
-      console.error('Error adding transaction:', error);
-      alert('Failed to add transaction.');
+      console.error('Error saving transactions:', error);
+      alert('Failed to save transactions.');
     }
   });
 
-  // Search Transaction Handler
+  // Add a new row to the transactions table
+  addRowBtn.addEventListener('click', () => {
+    const newRow = `
+      <tr>
+        <td>
+          <select class="transactionType" required>
+            <option value="">Select Type</option>
+            <option value="asset">Asset</option>
+            <option value="liabilities">Liabilities</option>
+            <option value="expense">Expense</option>
+            <option value="equity">Equity</option>
+            <option value="profit">Profit</option>
+            <option value="sales">Sales</option>
+            <option value="debtors">Debtors</option>
+            <option value="creditors">Creditors</option>
+          </select>
+        </td>
+        <td>
+          <select class="accountPrefix" required>
+            <option value="">Select Prefix</option>
+          </select>
+        </td>
+        <td><input type="text" class="accountCode" required placeholder="Code"></td>
+        <td><input type="text" class="description" placeholder="Description"></td>
+        <td><input type="number" class="debit" step="0.01" placeholder="Debit"></td>
+        <td><input type="number" class="credit" step="0.01" placeholder="Credit"></td>
+        <td><button class="remove-row-btn">Remove</button></td>
+      </tr>
+    `;
+    document.getElementById('transactionRows').insertAdjacentHTML('beforeend', newRow);
+  });
+
+  // Remove a row from the transactions table
+  document.addEventListener('click', (event) => {
+    if (event.target.classList.contains('remove-row-btn')) {
+      event.target.closest('tr').remove();
+    }
+  });
+
+  // Update account prefix options when transaction type changes
+  document.addEventListener('change', (event) => {
+    if (event.target.classList.contains('transactionType')) {
+      const selectedType = event.target.value;
+      const prefixElement = event.target.closest('tr').querySelector('.accountPrefix');
+
+      prefixElement.innerHTML = '<option value="">Select Prefix</option>';
+
+      if (prefixes[selectedType]) {
+        prefixes[selectedType].forEach(prefix => {
+          const option = document.createElement('option');
+          option.value = prefix;
+          option.textContent = prefix;
+          prefixElement.appendChild(option);
+        });
+      }
+    }
+  });
+
+  // Search for a transaction
   searchTransactionBtn.addEventListener('click', async () => {
     const searchQuery = transactionSearch.value.trim();
+
     if (!currentCompanyId) {
       console.error('Company ID is not loaded yet.');
       return;
@@ -208,24 +287,4 @@ window.addEventListener('DOMContentLoaded', () => {
       alert('Search query is empty. Please enter a transaction number or description.');
     }
   });
-
-  // Update account prefix options based on selected transaction type
-  transactionTypeElement.addEventListener('change', (event) => {
-    const selectedType = event.target.value;
-
-    // Clear existing options
-    accountPrefixElement.innerHTML = '<option value="">Select Account Prefix</option>';
-
-    if (prefixes[selectedType]) {
-      prefixes[selectedType].forEach(prefix => {
-        const option = document.createElement('option');
-        option.value = prefix;
-        option.textContent = prefix;
-        accountPrefixElement.appendChild(option);
-      });
-    }
-  });
-
 });
-
-

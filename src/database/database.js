@@ -92,60 +92,70 @@ function initializeCompanyDatabase(dbPath) {
 
 // Add a transaction to a company's database
 async function addTransaction(companyId, transaction) {
+  console.log('Transaction Received:', transaction); // Debug log
+  console.log('Company ID:', companyId);
 
-  // Debug: Log raw transaction data
-  console.log('Raw Transaction Data Received:', transaction);
-  console.log('CompanyId:', companyId);
-
+  // Query to fetch the database path for the company
   const query = `SELECT db_path FROM companies WHERE id = ?`;
 
   const relativePath = await new Promise((resolve, reject) => {
     mainDb.get(query, [companyId], (err, row) => {
-      if (err) reject(err);
-      else resolve(row.db_path);
+      if (err) {
+        reject(err);
+      } else if (!row) {
+        reject(new Error('Company not found'));
+      } else {
+        resolve(row.db_path);
+      }
     });
   });
-  
-  console.log('relative path: ', relativePath);
+
+  console.log('Relative DB Path:', relativePath);
 
   const companyDbPath = path.join(__dirname, relativePath);
-  console.log('absolute path: ', companyDbPath);
+  console.log('Resolved Company DB Path:', companyDbPath);
+
   const db = new sqlite3.Database(companyDbPath);
 
   const {
-      transaction_no,
-      account_code,
-      description,
-      debit,
-      credit,
-      transaction_date,
-      account_type
-    } = transaction;
+    transaction_no,
+    transaction_date,
+    account_type,
+    account_code,
+    description,
+    debit,
+    credit,
+  } = transaction;
 
   return new Promise((resolve, reject) => {
-    const query = `
-      INSERT INTO transactions (transaction_no, account_code, description, debit, credit, date, account_type)
+    const insertQuery = `
+      INSERT INTO transactions (
+        transaction_no, account_code, description, debit, credit, date, account_type
+      )
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
-    console.log('Executing SQL Query:', query, [
-      transaction_no,
-      account_code,
-      description,
-      debit,
-      credit,
-      transaction_date,
-      account_type
-    ]);
+
+    console.log('SQL Query:', insertQuery);
+
     db.run(
-      query,
-      [transaction_no, account_code, description, debit, credit, transaction_date, account_type],
+      insertQuery,
+      [
+        transaction_no,
+        account_code,
+        description,
+        debit,
+        credit,
+        transaction_date,
+        account_type,
+      ],
       function (err) {
         if (err) {
           db.close();
           return reject(err);
         }
+        console.log('Transaction added successfully. Row ID:', this.lastID);
         db.close();
-        resolve(this.lastID);
+        resolve(this.lastID); // Return the ID of the inserted row
       }
     );
   });

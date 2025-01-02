@@ -27,6 +27,7 @@ function createMainWindow() {
 
 // Create company window
 function createCompanyWindow(companyId) {
+
   const companyWindow = new BrowserWindow({
     width: 1000,
     height: 800,
@@ -36,6 +37,8 @@ function createCompanyWindow(companyId) {
       preload: path.join(__dirname, 'preload.js')
     }
   });
+
+  companyWindow.maximize();
 
   companyWindow.loadFile(path.join(__dirname, 'windows', 'companyWindow.html'));
 
@@ -124,12 +127,11 @@ ipcMain.handle('search-transaction', async (event, companyId, query) => {
 });
 
 ipcMain.handle('add-transaction', async (event, companyId, transaction) => {
-  console.log('running add-transaction')
   try {
-    console.log('receiving transaction');
     console.log('Transaction Received in Main Process:', transaction);
 
     const result = await addTransaction(companyId, transaction);
+    console.log('Transaction inserted: ', result)
     return result;
   } catch (error) {
     console.log(error)
