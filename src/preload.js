@@ -11,9 +11,5 @@ contextBridge.exposeInMainWorld('api', {
     getLastTransaction: (companyId) => ipcRenderer.invoke('get-last-transaction', companyId),
     getAccounts: (companyId) => ipcRenderer.invoke('get-accounts', companyId),
     searchTransaction: (companyId, query) => ipcRenderer.invoke('search-transaction', companyId, query),
-    addTransaction: (companyId, transaction) => {
-        console.log('Sending Transaction to Main Process:', transaction); // Debug log
-        console.log('Transaction Data Type:', typeof transaction);
-        return ipcRenderer.invoke('add-transaction', companyId, transaction);
-    },
+    addTransaction: (companyId, transaction) => ipcRenderer.invoke('add-transaction', companyId, transaction),
 });

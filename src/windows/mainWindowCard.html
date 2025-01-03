@@ -17,7 +17,6 @@
     <!-- Filters and Add Button -->
     <div class="toolbar">
       <button id="addCompanyBtn" class="add-button">+</button>
-      <button id="filterBtn" class="filter-button">Filters</button>
     </div>
 
     <!-- Company Cards Section -->
@@ -30,6 +29,21 @@
       <button class="page-btn">Previous</button>
       <span>1</span>
       <button class="page-btn">Next</button>
+    </div>
+  </div>
+
+  <!-- Add Company Modal -->
+  <div id="addCompanyModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <h2>Add New Company</h2>
+      <div class="form-group">
+        <label for="companyNameInput">Company Name:</label>
+        <input type="text" id="companyNameInput" placeholder="Enter company name" required>
+      </div>
+      <div class="form-actions">
+        <button id="saveCompanyBtn" class="add-button">Save</button>
+        <button id="cancelCompanyBtn" class="filter-button">Cancel</button>
+      </div>
     </div>
   </div>
 

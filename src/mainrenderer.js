@@ -3,6 +3,10 @@
 // DOM elements
 const companyList = document.getElementById('companyList');
 const addCompanyBtn = document.getElementById('addCompanyBtn');
+const addCompanyModal = document.getElementById('addCompanyModal');
+const companyNameInput = document.getElementById('companyNameInput');
+const saveCompanyBtn = document.getElementById('saveCompanyBtn');
+const cancelCompanyBtn = document.getElementById('cancelCompanyBtn');
 
 // Load list of companies
 window.addEventListener('DOMContentLoaded', loadCompanies);
@@ -36,14 +40,31 @@ function renderCompanyCards(companies) {
 }
 
 // Handle adding a new company
-addCompanyBtn.addEventListener('click', async () => {
-  const name = prompt('Enter the name of the new company:');
-  if (!name) return; // Exit if no name is provided
+addCompanyBtn.addEventListener('click', () => {
+  addCompanyModal.style.display = 'flex';
+});
+
+// Hide the modal
+cancelCompanyBtn.addEventListener('click', () => {
+  addCompanyModal.style.display = 'none';
+  companyNameInput.value = ''; // Clear input field
+});
+
+// Save company
+saveCompanyBtn.addEventListener('click', async () => {
+  const name = companyNameInput.value.trim();
+  if (!name) {
+    alert('Company name is required!');
+    return;
+  }
 
   try {
-    await window.api.addCompany(name); // Use exposed API
-    loadCompanies(); // Reload the company list
+    await window.api.addCompany(name); // Call the exposed API to add the company
+    addCompanyModal.style.display = 'none'; // Close the modal
+    companyNameInput.value = ''; // Clear input field
+    loadCompanies(); // Refresh the company list
   } catch (error) {
     console.error('Error adding company:', error);
+    alert('Failed to add company. Please try again.');
   }
 });
