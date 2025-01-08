@@ -11,6 +11,10 @@ window.addEventListener('DOMContentLoaded', () => {
   const addTransactionModal = document.getElementById('addTransactionModal');
   const addRowBtn = document.getElementById('addRowBtn');
 
+  const editTransactionBtn = document.getElementById('editTransactionBtn');
+  const editTransactionModal = document.getElementById('editTransactionModal'); 
+  const cancelEditTransactionBtn = document.getElementById('cancelEditTransactionBtn');
+
   const searchTransactionBtn = document.getElementById('searchTransactionBtn');
   const transactionSearch = document.getElementById('transactionSearch');
   const transactionBody = document.getElementById('main-transaction-body');
@@ -264,6 +268,16 @@ window.addEventListener('DOMContentLoaded', () => {
         });
       }
     }
+  });
+
+  // open edit modal
+  editTransactionBtn.addEventListener('click', () =>{
+    editTransactionModal.style.display = 'block';''
+  });
+
+  // close edit modal
+  cancelEditTransactionBtn.addEventListener('click', () => {
+    editTransactionModal.style.display = 'none';
   });
 
   // Search for a transaction
