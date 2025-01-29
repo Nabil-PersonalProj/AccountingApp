@@ -12,4 +12,5 @@ contextBridge.exposeInMainWorld('api', {
     getAccounts: (companyId) => ipcRenderer.invoke('get-accounts', companyId),
     searchTransaction: (companyId, query) => ipcRenderer.invoke('search-transaction', companyId, query),
     addTransaction: (companyId, transaction) => ipcRenderer.invoke('add-transaction', companyId, transaction),
+    updateTransaction: (companyId, transaction) => ipcRenderer.invoke('update-transaction', companyId, transaction),
 });

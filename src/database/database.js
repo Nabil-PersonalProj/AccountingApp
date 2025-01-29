@@ -249,6 +249,45 @@ function searchTransaction(companyId, searchQuery) {
   });
 }
 
+function updateTransaction(companyId, transactions) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const query = `SELECT db_path FROM companies WHERE id = ?`;
+      const relativePath = await new Promise((resolve, reject) => {
+        mainDb.get(query, [companyId], (err, row) => {
+          if (err) return reject(err);
+          if (!row) return reject(new Error('Company not found.'));
+          resolve(row.db_path);
+        });
+      });
+
+      const companyDbPath = path.join(__dirname, relativePath);
+      const companyDb = new sqlite3.Database(companyDbPath);
+
+      companyDb.serialize(() => {
+        const updateQuery = `
+          UPDATE transactions
+          SET transaction_no = ?, account_code = ?, description = ?, debit = ?, credit = ?, date = ?, account_type = ?
+          WHERE transaction_id = ?
+        `;
+
+        transactions.forEach(transaction => {
+          const { transaction_id, transaction_no, account_code, description, debit, credit, date, account_type } = transaction;
+          companyDb.run(
+            updateQuery,
+            [transaction_no, account_code, description, debit, credit, date, account_type, transaction_id]
+          );
+        });
+
+        companyDb.close();
+        resolve(true); // Indicate success
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
 
 
 module.exports = {
@@ -259,4 +298,5 @@ module.exports = {
   getAccounts,
   searchTransaction,
   addTransaction,
+  updateTransaction
 };

@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
-const { addCompany, getCompanies, getTransactions, getAccounts, searchTransaction, addTransaction } = require('./database/database');
+const { addCompany, getCompanies, getTransactions, getAccounts, searchTransaction, addTransaction, updateTransaction } = require('./database/database');
 
 const isMac = process.platform == 'darwin';
 const isDev = process.env.NODE_ENV != 'development';
@@ -23,6 +23,7 @@ function createMainWindow() {
   }
   
   mainWindow.loadFile(path.join(__dirname, 'windows', 'mainWindowcard.html'));
+  console.log('main window loaded');
 }
 
 // Create company window
@@ -46,6 +47,8 @@ function createCompanyWindow(companyId) {
   companyWindow.webContents.once('did-finish-load', () => {
     companyWindow.webContents.send('load-transactions', companyId);
   });
+
+  console.log('company window loaded. Id:', companyId);
 }
 
 // Register IPC Handlers
@@ -136,6 +139,15 @@ ipcMain.handle('add-transaction', async (event, companyId, transaction) => {
   } catch (error) {
     console.log(error)
     console.error('Error adding transaction:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('update-transaction', async (event, companyId, transaction) => {
+  try {
+    return await updateTransaction(companyId, transaction);
+  } catch (error) {
+    console.error('Error updating transaction:', error);
     throw error;
   }
 });

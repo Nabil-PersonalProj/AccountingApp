@@ -1,6 +1,5 @@
 // Wait for the DOM content to load
 window.addEventListener('DOMContentLoaded', () => {
-
   // Retrieve all relevant DOM elements
   const tabs = document.querySelectorAll('.tab-button');
   const sections = document.querySelectorAll('.tab-content');
@@ -12,12 +11,16 @@ window.addEventListener('DOMContentLoaded', () => {
   const addRowBtn = document.getElementById('addRowBtn');
 
   const editTransactionBtn = document.getElementById('editTransactionBtn');
-  const editTransactionModal = document.getElementById('editTransactionModal'); 
+  const editTransactionModal = document.getElementById('editTransactionModal');
+  const saveEditTransactionBtn = document.getElementById('saveEditTransactionBtn');
   const cancelEditTransactionBtn = document.getElementById('cancelEditTransactionBtn');
+  const editTransactionRows = document.getElementById('editTransactionRows');
 
   const searchTransactionBtn = document.getElementById('searchTransactionBtn');
   const transactionSearch = document.getElementById('transactionSearch');
   const transactionBody = document.getElementById('main-transaction-body');
+
+  let currentCompanyId = null;
 
   // Prefix mapping for transaction types
   const prefixes = {
@@ -30,9 +33,7 @@ window.addEventListener('DOMContentLoaded', () => {
     debtors: ['TD'],
     creditors: ['TC']
   };
-
-  let currentCompanyId = null; // Store the company ID loaded in the UI
-
+  ////////////////////////////////////////// all the functions///////////////////////////////////////////////////////
   // Load company data when the page opens
   window.api.loadTransactions(async (companyId) => {
     try {
@@ -61,14 +62,13 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('companyName').textContent = companyName;
   }
 
-  // Load the main tab with the latest transactions
+    // Load the main tab with the latest transactions
   function loadMainTab(transactions) {
     if (!transactions || transactions.length === 0) {
       transactionBody.innerHTML = '<tr><td colspan="6">No transactions available.</td></tr>';
       return;
     }
 
-    // Filter transactions to only include the latest transaction number
     const latestTransactionNo = Math.max(...transactions.map(t => t.transaction_no));
     const filteredTransactions = transactions.filter(t => t.transaction_no === latestTransactionNo);
 
@@ -137,6 +137,39 @@ window.addEventListener('DOMContentLoaded', () => {
     tabs[0].click(); // Default to the main tab
   }
 
+  // Refresh all tabs
+  async function refresh(companyId) {
+    const transactions = await window.api.getTransactions(companyId);
+    const accounts = await window.api.getAccounts(companyId);
+    loadMainTab(transactions);
+    loadTransactionsTab(transactions);
+    loadAccountsTab(accounts);
+  }
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////// Search transactions ///////////////////////////////////////////////////
+  // Search for a transaction
+  searchTransactionBtn.addEventListener('click', async () => {
+    const searchQuery = transactionSearch.value.trim();
+
+    if (!currentCompanyId) {
+      console.error('Company ID is not loaded yet.');
+      return;
+    }
+
+    if (searchQuery) {
+      try {
+        const transactions = await window.api.searchTransaction(currentCompanyId, searchQuery);
+        displayTransactionDetails(transactions);
+      } catch (error) {
+        console.error('Error fetching transactions:', error);
+        alert('An error occurred while searching for transactions. Please try again.');
+      }
+    } else {
+      alert('Search query is empty. Please enter a transaction number or description.');
+    }
+  });
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////// adding transactions///////////////////////////////////////////////////
   // Open the Add Transaction modal
   addTransactionBtn.addEventListener('click', () => {
     addTransactionModal.style.display = 'block';
@@ -212,8 +245,8 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Add a new row to the transactions table
-  addRowBtn.addEventListener('click', () => {
+   // Add a new row to the transactions table
+   addRowBtn.addEventListener('click', () => {
     const newRow = `
       <tr>
         <td>
@@ -269,36 +302,98 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////// edit transactions /////////////////////////////////////////////////////////
+  // Open the Edit Transaction modal
+  editTransactionBtn.addEventListener('click', async () => {
+    const transactionNoElement = document.getElementById('last-transaction-no');
+    const transactionNoText = transactionNoElement ? transactionNoElement.textContent : '';
+    const transactionNo = parseInt(transactionNoText.replace('Last Transaction No: ', '').trim());
 
-  // open edit modal
-  editTransactionBtn.addEventListener('click', () =>{
-    editTransactionModal.style.display = 'block';''
-  });
-
-  // close edit modal
-  cancelEditTransactionBtn.addEventListener('click', () => {
-    editTransactionModal.style.display = 'none';
-  });
-
-  // Search for a transaction
-  searchTransactionBtn.addEventListener('click', async () => {
-    const searchQuery = transactionSearch.value.trim();
-
-    if (!currentCompanyId) {
-      console.error('Company ID is not loaded yet.');
+    if (!transactionNo) {
+      alert('No transactions available to edit.');
       return;
     }
 
-    if (searchQuery) {
-      try {
-        const transactions = await window.api.searchTransaction(currentCompanyId, searchQuery);
-        displayTransactionDetails(transactions);
-      } catch (error) {
-        console.error('Error fetching transactions:', error);
-        alert('An error occurred while searching for transactions. Please try again.');
+    try {
+      const transactions = await window.api.getTransactions(currentCompanyId);
+      const filteredTransactions = transactions.filter(t => t.transaction_no === transactionNo);
+
+      if (filteredTransactions.length === 0) {
+        alert('No transactions found for the given transaction number.');
+        return;
       }
-    } else {
-      alert('Search query is empty. Please enter a transaction number or description.');
+
+      // Populate the modal with transactions
+      document.getElementById('editTransactionNo').value = transactionNo; // Store transaction number
+      editTransactionRows.innerHTML = filteredTransactions.map(t => `
+        <tr>
+          <td>
+            <select class="transactionType" required>
+              <option value="${t.account_type}" selected>${t.account_type}</option>
+              <option value="asset">Asset</option>
+              <option value="liabilities">Liabilities</option>
+              <option value="expense">Expense</option>
+              <option value="equity">Equity</option>
+              <option value="profit">Profit</option>
+              <option value="sales">Sales</option>
+              <option value="debtors">Debtors</option>
+              <option value="creditors">Creditors</option>
+            </select>
+          </td>
+          <td><input type="text" class="accountCode" value="${t.account_code}" required></td>
+          <td><input type="text" class="description" value="${t.description || ''}"></td>
+          <td><input type="number" class="debit" step="0.01" value="${t.debit || 0}"></td>
+          <td><input type="number" class="credit" step="0.01" value="${t.credit || 0}"></td>
+          <td><button class="remove-row-btn">Remove</button></td>
+        </tr>
+      `).join('');
+
+      editTransactionModal.style.display = 'block';
+    } catch (error) {
+      console.error('Error loading transactions:', error);
+      alert('An error occurred while fetching transactions.');
     }
+  });
+
+  // Save edited transactions
+  saveEditTransactionBtn.addEventListener('click', async () => {
+    const transactionNo = document.getElementById('editTransactionNo').value;
+    const rows = Array.from(document.querySelectorAll('#editTransactionRows tr'));
+    const updatedTransactions = rows.map(row => {
+      const transactionId = row.querySelector('.transactionId').value;
+      const transactionType = row.querySelector('.transactionType').value;
+      const accountCode = row.querySelector('.accountCode').value;
+      const description = row.querySelector('.description').value || '';
+      const debit = parseFloat(row.querySelector('.debit').value) || 0;
+      const credit = parseFloat(row.querySelector('.credit').value) || 0;
+
+      return {
+        transaction_id: transactionId,
+        transaction_no: transactionNo,
+        account_type: transactionType,
+        account_code: accountCode,
+        description,
+        debit,
+        credit,
+      };
+    });
+
+    try {
+      await Promise.all(
+        updatedTransactions.map(transaction => window.api.updateTransaction(currentCompanyId, transaction))
+      );
+      alert('Transactions updated successfully!');
+      editTransactionModal.style.display = 'none';
+      refresh(currentCompanyId);
+    } catch (error) {
+      console.error('Error saving transactions:', error);
+      alert('Failed to save transactions.');
+    }
+  });
+
+  // Close the Edit Transaction modal
+  cancelEditTransactionBtn.addEventListener('click', () => {
+    editTransactionModal.style.display = 'none';
   });
 });

@@ -120,35 +120,27 @@
     <!-- Edit Transaction Modal -->
     <div id="editTransactionModal" class="modal" style="display: none;">
       <div class="modal-content">
-        <h2>Edit Transaction</h2>
+        <h2>Edit Transactions</h2>
         <form id="editTransactionForm">
-          <div class="form-group">
-            <label for="editTransactionNo">Transaction No:</label>
-            <input type="number" id="editTransactionNo" readonly>
-          </div>
-          <div class="form-group">
-            <label for="editTransactionDate">Date:</label>
-            <input type="date" id="editTransactionDate" required>
-          </div>
-          <div class="form-group">
-            <label for="editAccountCode">Account Code:</label>
-            <input type="text" id="editAccountCode" required>
-          </div>
-          <div class="form-group">
-            <label for="editDescription">Description:</label>
-            <input type="text" id="editDescription">
-          </div>
-          <div class="form-group">
-            <label for="editDebit">Debit:</label>
-            <input type="number" id="editDebit" step="0.01" required>
-          </div>
-          <div class="form-group">
-            <label for="editCredit">Credit:</label>
-            <input type="number" id="editCredit" step="0.01" required>
-          </div>
+          <table class="transaction-table">
+            <thead>
+              <tr>
+                <th>Account Type</th>
+                <th>Account Code</th>
+                <th>Description</th>
+                <th>Debit</th>
+                <th>Credit</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="editTransactionRows">
+              <!-- Rows dynamically populated -->
+              </tr>
+            </tbody> 
+          </table>
           <div class="form-actions">
-            <button type="button" id="saveEditTransactionBtn">Save</button>
-            <button type="button" id="cancelEditTransactionBtn">Cancel</button>
+            <button type="button" id="saveEditTransactionBtn" class="add-button">Save</button>
+            <button type="button" id="cancelEditTransactionBtn" class="filter-button">Cancel</button>
           </div>
         </form>
       </div>
