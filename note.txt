@@ -1,3 +1,8 @@
+total hours: 64 hrs (before edit)
+edit function: 16 hrs
+
+
+
 delete not important for now
 creation is fine
 creating account might need type
@@ -41,6 +46,3 @@ adding types of accounts
 add date to table
 
 
-
-
-add transaction must be a pair preferable table format

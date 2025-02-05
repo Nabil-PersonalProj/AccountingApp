@@ -15,12 +15,14 @@ window.addEventListener('DOMContentLoaded', () => {
   const saveEditTransactionBtn = document.getElementById('saveEditTransactionBtn');
   const cancelEditTransactionBtn = document.getElementById('cancelEditTransactionBtn');
   const editTransactionRows = document.getElementById('editTransactionRows');
+  const transactionNoElement = document.getElementById('last-transaction-no');
 
   const searchTransactionBtn = document.getElementById('searchTransactionBtn');
   const transactionSearch = document.getElementById('transactionSearch');
   const transactionBody = document.getElementById('main-transaction-body');
 
   let currentCompanyId = null;
+  let originalTransactionSnapshot = []; // Store original transactions
 
   // Prefix mapping for transaction types
   const prefixes = {
@@ -52,7 +54,7 @@ window.addEventListener('DOMContentLoaded', () => {
       setupTabNavigation();
     } catch (error) {
       console.error('Error loading data:', error);
-      alert('An error occurred while loading company data. Please refresh the page.');
+      window.api.showMessage('An error occurred while loading company data. Please refresh the page.');
     }
   });
 
@@ -148,7 +150,31 @@ window.addEventListener('DOMContentLoaded', () => {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////// Search transactions ///////////////////////////////////////////////////
   // Search for a transaction
+  // Function to display searched transactions
+  function displayTransactionDetails(transactions) {
+    const mainTransactionBody = document.getElementById('main-transaction-body'); // Main Transactions tab
+
+    if (!transactions || transactions.length === 0) {
+        mainTransactionBody.innerHTML = '<tr><td colspan="6">No transactions found.</td></tr>';
+        return;
+    }
+
+    // Update only the Main Transactions tab with search results
+    mainTransactionBody.innerHTML = transactions.map(transaction => `
+      <tr>
+        <td>${transaction.date}</td>
+        <td>${transaction.transaction_no}</td>
+        <td>${transaction.account_code}</td>
+        <td>${transaction.description}</td>
+        <td>${transaction.debit}</td>
+        <td>${transaction.credit}</td>
+      </tr>
+    `).join('');
+}
+
+
   searchTransactionBtn.addEventListener('click', async () => {
+    console.log('Search button clicked');
     const searchQuery = transactionSearch.value.trim();
 
     if (!currentCompanyId) {
@@ -162,10 +188,10 @@ window.addEventListener('DOMContentLoaded', () => {
         displayTransactionDetails(transactions);
       } catch (error) {
         console.error('Error fetching transactions:', error);
-        alert('An error occurred while searching for transactions. Please try again.');
+        window.api.showMessage('An error occurred while searching for transactions. Please try again.');
       }
     } else {
-      alert('Search query is empty. Please enter a transaction number or description.');
+      window.api.showMessage('Search query is empty. Please enter a transaction number or description.');
     }
   });
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -181,6 +207,7 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('transactionRows').innerHTML = ''; // Clear all rows
     document.getElementById('transactionNo').value = '';
     document.getElementById('transactionDate').value = '';
+    refresh(currentCompanyId)
   });
 
   // Save transactions from the modal
@@ -189,7 +216,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const transactionDate = document.getElementById('transactionDate').value;
 
     if (!transactionNo || !transactionDate) {
-      alert('Transaction No. and Date are required!');
+      window.api.showMessage('Transaction No. and Date are required!');
       return;
     }
 
@@ -204,7 +231,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const credit = parseFloat(row.querySelector('.credit').value) || 0;
 
         if (!transactionType || !accountPrefix || !accountCode) {
-          alert('Please fill in all required fields in each row.');
+          window.api.showMessage('Please fill in all required fields in each row.');
           throw new Error('Validation failed');
         }
 
@@ -223,7 +250,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const totalCredit = transactions.reduce((sum, t) => sum + t.credit, 0);
 
       if (totalDebit !== totalCredit) {
-        alert('Total Debit is not equal to Total Credit. Please Adjust transactions');
+        window.api.showMessage('Total Debit is not equal to Total Credit. Please Adjust transactions');
         return;
       }
 
@@ -231,7 +258,7 @@ window.addEventListener('DOMContentLoaded', () => {
         transactions.map(transaction => window.api.addTransaction(currentCompanyId, transaction))
       );
 
-      alert('Transactions added successfully!');
+      window.api.showMessage('Transactions added successfully!');
       addTransactionModal.style.display = 'none';
 
       const allTransactions = await window.api.getTransactions(currentCompanyId);
@@ -241,7 +268,7 @@ window.addEventListener('DOMContentLoaded', () => {
       loadAccountsTab(accounts);
     } catch (error) {
       console.error('Error saving transactions:', error);
-      alert('Failed to save transactions.');
+      window.api.showMessage('Failed to save transactions.');
     }
   });
 
@@ -287,113 +314,234 @@ window.addEventListener('DOMContentLoaded', () => {
   // Update account prefix options when transaction type changes
   document.addEventListener('change', (event) => {
     if (event.target.classList.contains('transactionType')) {
-      const selectedType = event.target.value;
-      const prefixElement = event.target.closest('tr').querySelector('.accountPrefix');
-
-      prefixElement.innerHTML = '<option value="">Select Prefix</option>';
-
-      if (prefixes[selectedType]) {
-        prefixes[selectedType].forEach(prefix => {
-          const option = document.createElement('option');
-          option.value = prefix;
-          option.textContent = prefix;
-          prefixElement.appendChild(option);
-        });
-      }
+      updateAccountPrefix(event.target);
     }
   });
+  
+  function updateAccountPrefix(selectElement) {
+    const selectedType = selectElement.value;
+    const row = selectElement.closest('tr');
+    const prefixElement = row.querySelector('.accountPrefix');
+  
+    prefixElement.innerHTML = '<option value="">Select Prefix</option>';
+  
+    if (prefixes[selectedType]) {
+      prefixes[selectedType].forEach(prefix => {
+        const option = document.createElement('option');
+        option.value = prefix;
+        option.textContent = prefix;
+        prefixElement.appendChild(option);
+      });
+  
+      // Auto-select first prefix if available
+      if (prefixes[selectedType].length > 0) {
+        prefixElement.value = prefixes[selectedType][0];
+      }
+    }
+  }
   ////////////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////// edit transactions /////////////////////////////////////////////////////////
   // Open the Edit Transaction modal
   editTransactionBtn.addEventListener('click', async () => {
-    const transactionNoElement = document.getElementById('last-transaction-no');
-    const transactionNoText = transactionNoElement ? transactionNoElement.textContent : '';
-    const transactionNo = parseInt(transactionNoText.replace('Last Transaction No: ', '').trim());
+    const transactionNoText = transactionNoElement.textContent.replace('Last Transaction No: ', '').trim();
+    const searchTransactionNo = transactionSearch.value.trim();
+
+    const transactionNo = searchTransactionNo ? parseInt(searchTransactionNo) : parseInt(transactionNoText);
 
     if (!transactionNo) {
-      alert('No transactions available to edit.');
+      window.api.showMessage('No transactions available to edit.');
       return;
     }
 
-    try {
+    try{ 
       const transactions = await window.api.getTransactions(currentCompanyId);
       const filteredTransactions = transactions.filter(t => t.transaction_no === transactionNo);
-
-      if (filteredTransactions.length === 0) {
-        alert('No transactions found for the given transaction number.');
+      
+      if (filteredTransactions.length === 0){
+        window.api.showMessage('No transactions found for the given the transaction no.');
         return;
       }
 
-      // Populate the modal with transactions
-      document.getElementById('editTransactionNo').value = transactionNo; // Store transaction number
-      editTransactionRows.innerHTML = filteredTransactions.map(t => `
-        <tr>
-          <td>
-            <select class="transactionType" required>
-              <option value="${t.account_type}" selected>${t.account_type}</option>
-              <option value="asset">Asset</option>
-              <option value="liabilities">Liabilities</option>
-              <option value="expense">Expense</option>
-              <option value="equity">Equity</option>
-              <option value="profit">Profit</option>
-              <option value="sales">Sales</option>
-              <option value="debtors">Debtors</option>
-              <option value="creditors">Creditors</option>
-            </select>
-          </td>
-          <td><input type="text" class="accountCode" value="${t.account_code}" required></td>
-          <td><input type="text" class="description" value="${t.description || ''}"></td>
-          <td><input type="number" class="debit" step="0.01" value="${t.debit || 0}"></td>
-          <td><input type="number" class="credit" step="0.01" value="${t.credit || 0}"></td>
-          <td><button class="remove-row-btn">Remove</button></td>
-        </tr>
-      `).join('');
+      originalTransactionSnapshot = JSON.parse(JSON.stringify(filteredTransactions));
 
+      document.getElementById('editTransactionNo').textContent = transactionNo;
+      populateModal(filteredTransactions);
       editTransactionModal.style.display = 'block';
     } catch (error) {
-      console.error('Error loading transactions:', error);
-      alert('An error occurred while fetching transactions.');
+      console.error('Error loading transactions:', error)
     }
   });
 
+  // add row btn
+  document.getElementById('addEditRowBtn').addEventListener('click', () => {
+    const today = new Date().toISOString().split('T')[0]; // Get today's date
+  
+    const newRow = `
+      <tr data-transaction-id="">
+        <td><input type="date" class="transactionDate" value="${today}" required></td>
+        <td>
+          <select class="transactionType" required>
+            <option value="">Select Type</option>
+            ${Object.keys(prefixes).map(type => `
+              <option value="${type}">${type.charAt(0).toUpperCase() + type.slice(1)}</option>
+            `).join('')}
+          </select>
+        </td>
+        <td>
+          <select class="accountPrefix" required>
+            <option value="">Select Prefix</option>
+          </select>
+        </td>
+        <td><input type="text" class="accountCode" required></td>
+        <td><input type="text" class="description"></td>
+        <td><input type="number" class="debit" step="0.01" placeholder="0"></td>
+        <td><input type="number" class="credit" step="0.01" placeholder="0"></td>
+        <td><button class="remove-edit-row-btn">Remove</button></td>
+      </tr>
+    `;
+    editTransactionRows.insertAdjacentHTML('beforeend', newRow);
+  
+    // Ensure dropdowns update dynamically
+    const newTypeSelect = editTransactionRows.lastElementChild.querySelector('.transactionType');
+    updateAccountPrefix(newTypeSelect);
+  });
+  
+  
+  // Remove Row Button Functionality
+  document.addEventListener('click', (event) => {
+    if (event.target.classList.contains('remove-edit-row-btn')) {
+      event.target.closest('tr').remove();
+    }
+  });
+
+  function populateModal(transactions) {
+    editTransactionRows.innerHTML = transactions.map(t => {
+      const accountType = Object.keys(prefixes).find(type =>
+        prefixes[type].some(prefix => t.account_code.startsWith(prefix))
+      ) || '';
+  
+      const accountPrefix = prefixes[accountType]?.find(prefix =>
+        t.account_code.startsWith(prefix)
+      ) || '';
+  
+      const accountCodeWithoutPrefix = accountPrefix ? t.account_code.replace(accountPrefix, '') : t.account_code;
+  
+      return `
+        <tr data-transaction-id="${t.transaction_id}">
+          <td><input type="date" class="transactionDate" value="${t.date}" required></td> <!-- ✅ Added Date Column -->
+          <td>
+            <select class="transactionType" required>
+              <option value="">Select Type</option>
+              ${Object.keys(prefixes).map(type => `
+                <option value="${type}" ${type === accountType ? 'selected' : ''}>${type.charAt(0).toUpperCase() + type.slice(1)}</option>
+              `).join('')}
+            </select>
+          </td>
+          <td>
+            <select class="accountPrefix" required>
+              <option value="">Select Prefix</option>
+              ${prefixes[accountType]?.map(prefix => `
+                <option value="${prefix}" ${prefix === accountPrefix ? 'selected' : ''}>${prefix}</option>
+              `).join('') || ''}
+            </select>
+          </td>
+          <td><input type="text" class="accountCode" value="${accountCodeWithoutPrefix}" required></td>
+          <td><input type="text" class="description" value="${t.description || ''}"></td>
+          <td><input type="number" class="debit" step="0.01" value="${t.debit || 0}" required></td>
+          <td><input type="number" class="credit" step="0.01" value="${t.credit || 0}" required></td>
+          <td><button class="remove-edit-row-btn">Remove</button></td>
+        </tr>
+      `;
+    }).join('');
+  
+    document.querySelectorAll('.transactionType').forEach(select => updateAccountPrefix(select));
+  }
+  
+
   // Save edited transactions
   saveEditTransactionBtn.addEventListener('click', async () => {
-    const transactionNo = document.getElementById('editTransactionNo').value;
     const rows = Array.from(document.querySelectorAll('#editTransactionRows tr'));
-    const updatedTransactions = rows.map(row => {
-      const transactionId = row.querySelector('.transactionId').value;
-      const transactionType = row.querySelector('.transactionType').value;
-      const accountCode = row.querySelector('.accountCode').value;
-      const description = row.querySelector('.description').value || '';
-      const debit = parseFloat(row.querySelector('.debit').value) || 0;
-      const credit = parseFloat(row.querySelector('.credit').value) || 0;
+    const transactionNo = document.getElementById('editTransactionNo').textContent;
 
-      return {
-        transaction_id: transactionId,
-        transaction_no: transactionNo,
-        account_type: transactionType,
-        account_code: accountCode,
-        description,
-        debit,
-        credit,
-      };
+    const updatedTransactions = rows.map(row => ({
+      transaction_id: row.dataset.transactionId || null,
+      transaction_no: transactionNo,
+      date: row.querySelector('.transactionDate').value,
+      account_type: row.querySelector('.transactionType').value,
+      account_code: `${row.querySelector('.accountPrefix').value}${row.querySelector('.accountCode').value}`,
+      description: row.querySelector('.description').value || '',
+      debit: parseFloat(row.querySelector('.debit').value) || 0,
+      credit: parseFloat(row.querySelector('.credit').value) || 0,
+    }));
+
+    const totalDebit = updatedTransactions.reduce((sum, t) => sum + t.debit, 0);
+    const totalCredit = updatedTransactions.reduce((sum, t) => sum + t.credit, 0);
+
+    const warningElement = document.getElementById('editBalanceWarning');
+    if (totalDebit !== totalCredit) {
+      warningElement.textContent = `Total Debit (${totalDebit}) is not equal to Total Credit (${totalCredit}). Please adjust transactions.`;
+      warningElement.style.display = 'block';
+      return;
+    } else {
+      warningElement.style.display = 'none'; // Hide warning if balance is correct
+    }
+    
+    const modifiedTransactions = [];
+    const addedTransactions = [];
+    const deletedTransactions = originalTransactionSnapshot.map(t => t.transaction_id);
+  
+    updatedTransactions.forEach(updated => {
+      if (updated.transaction_id) {
+        const original = originalTransactionSnapshot.find(t => t.transaction_id == updated.transaction_id);
+  
+        if (!original) {
+          addedTransactions.push(updated);
+        } else {
+          deletedTransactions.splice(deletedTransactions.indexOf(updated.transaction_id), 1);
+  
+          if (
+            updated.date !== original.date ||
+            updated.account_code !== original.account_code ||
+            updated.description !== original.description ||
+            updated.debit !== original.debit ||
+            updated.credit !== original.credit
+          ) {
+            modifiedTransactions.push(updated);
+          }
+        }
+      } else {
+        addedTransactions.push(updated);
+      }
     });
-
+  
+    if (modifiedTransactions.length === 0 && addedTransactions.length === 0 && deletedTransactions.length === 0) {
+      window.api.showMessage('No changes detected.');
+      return;
+    }
+  
     try {
-      await Promise.all(
-        updatedTransactions.map(transaction => window.api.updateTransaction(currentCompanyId, transaction))
-      );
-      alert('Transactions updated successfully!');
+      if (modifiedTransactions.length > 0) {
+        await window.api.updateTransactions(currentCompanyId, modifiedTransactions);
+      }
+      if (addedTransactions.length > 0) {
+        await window.api.addTransaction(currentCompanyId, addedTransactions);
+      }
+      if (deletedTransactions.length > 0) {
+        await window.api.deleteTransactions(currentCompanyId, deletedTransactions);
+      }
+      
+      warningElement.style.display = 'none';
+      window.api.showMessage('Transactions updated successfully!');
       editTransactionModal.style.display = 'none';
-      refresh(currentCompanyId);
+      refresh(currentCompanyId)
     } catch (error) {
       console.error('Error saving transactions:', error);
-      alert('Failed to save transactions.');
     }
   });
 
   // Close the Edit Transaction modal
   cancelEditTransactionBtn.addEventListener('click', () => {
     editTransactionModal.style.display = 'none';
+    refresh(currentCompanyId)
   });
 });

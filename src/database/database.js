@@ -24,6 +24,17 @@ mainDb.serialize(() => {
   `);
 });
 
+// Helper function to get database path
+async function getCompanyDbPath(companyId) {
+  return new Promise((resolve, reject) => {
+    mainDb.get(`SELECT db_path FROM companies WHERE id = ?`, [companyId], (err, row) => {
+      if (err) return reject(err);
+      if (!row) return reject(new Error('Company not found.'));
+      resolve(path.join(__dirname, row.db_path));
+    });
+  });
+}
+
 // Add a new company for each company added, the db for that company is also initialized
 function addCompany(name) {
   return new Promise((resolve, reject) => {
@@ -90,95 +101,75 @@ function initializeCompanyDatabase(dbPath) {
   });
 }
 
-// Add a transaction to a company's database
-async function addTransaction(companyId, transaction) {
-  console.log('Transaction Received:', transaction); // Debug log
-  console.log('Company ID:', companyId);
-
-  // Query to fetch the database path for the company
-  const query = `SELECT db_path FROM companies WHERE id = ?`;
-
-  const relativePath = await new Promise((resolve, reject) => {
-    mainDb.get(query, [companyId], (err, row) => {
-      if (err) {
-        reject(err);
-      } else if (!row) {
-        reject(new Error('Company not found'));
-      } else {
-        resolve(row.db_path);
-      }
-    });
-  });
-
-  console.log('Relative DB Path:', relativePath);
-
-  const companyDbPath = path.join(__dirname, relativePath);
-  console.log('Resolved Company DB Path:', companyDbPath);
-
-  const db = new sqlite3.Database(companyDbPath);
-
-  const {
-    transaction_no,
-    transaction_date,
-    account_type,
-    account_code,
-    description,
-    debit,
-    credit,
-  } = transaction;
-
-  return new Promise((resolve, reject) => {
-    const insertQuery = `
-      INSERT INTO transactions (
-        transaction_no, account_code, description, debit, credit, date, account_type
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
-
-    console.log('SQL Query:', insertQuery);
-
-    db.run(
-      insertQuery,
-      [
-        transaction_no,
-        account_code,
-        description,
-        debit,
-        credit,
-        transaction_date,
-        account_type,
-      ],
-      function (err) {
-        if (err) {
-          db.close();
-          return reject(err);
-        }
-        console.log('Transaction added successfully. Row ID:', this.lastID);
-        db.close();
-        resolve(this.lastID); // Return the ID of the inserted row
-      }
-    );
-  });
-}
-
+// Fetch all transactions for a company
 function getTransactions(companyId) {
-  return new Promise((resolve, reject) => {
-    mainDb.get(`SELECT db_path FROM companies WHERE id = ?`, [companyId], (err, row) => {
-      if (err) return reject(`Error fetching db_path for company ID ${companyId}: ${err.message}`);
-      if (!row) return reject(`No company found with ID ${companyId}`);
-
-      // Access the company's database
-      const companyDbPath = path.join(__dirname, row.db_path);
-      const companyDb = new sqlite3.Database(companyDbPath);
-
-      companyDb.all(`SELECT * FROM transactions`, (err, rows) => {
-        companyDb.close(); // Close the database after query
-        if (err) return reject(`Error fetching transactions: ${err.message}`);
-        resolve(rows); // Return the transactions as an array
+  return new Promise(async (resolve, reject) => {
+    try {
+      const dbPath = await getCompanyDbPath(companyId);
+      const db = new sqlite3.Database(dbPath);
+      db.all(`SELECT * FROM transactions`, (err, rows) => {
+        db.close();
+        if (err) return reject(err);
+        resolve(rows);
       });
-    });
+    } catch (error) {
+      reject(error);
+    }
   });
 }
+
+// Fetch the last transaction for a company
+function getLastTransaction(companyId) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const dbPath = await getCompanyDbPath(companyId);
+      const db = new sqlite3.Database(dbPath);
+      db.get(`SELECT * FROM transactions ORDER BY transaction_no DESC LIMIT 1`, (err, row) => {
+        db.close();
+        if (err) return reject(err);
+        resolve(row);
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+// Add multiple transactions to a company's database
+function addTransaction(companyId, transactions) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const dbPath = await getCompanyDbPath(companyId);
+      const db = new sqlite3.Database(dbPath);
+
+      db.serialize(() => {
+        db.run('BEGIN TRANSACTION;');
+
+        const insertQuery = `
+          INSERT INTO transactions (transaction_no, account_code, description, debit, credit, date, account_type)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `;
+
+        transactions.forEach(transaction => {
+          db.run(insertQuery, [
+            transaction.transaction_no, transaction.account_code,
+            transaction.description, transaction.debit, transaction.credit,
+            new Date().toISOString().split('T')[0], transaction.account_type
+          ]);
+        });
+
+        db.run('COMMIT;', function (err) {
+          db.close();
+          if (err) return reject(err);
+          resolve(true);
+        });
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
 
 async function getAccounts(companyId) {
   const query = `SELECT db_path FROM companies WHERE id = ?`;
@@ -207,28 +198,6 @@ async function getAccounts(companyId) {
   });
 }
 
-function getLastTransaction(companyId) {
-  return new Promise((resolve, reject) => {
-    mainDb.get(`SELECT db_path FROM companies WHERE id = ?`, [companyId], (err, row) => {
-      if (err) return reject(`Error fetching db_path for company ID ${companyId}: ${err.message}`);
-      if (!row) return reject(`No company found with ID ${companyId}`);
-
-      // Construct the path to the company's database
-      const companyDbPath = path.join(__dirname, row.db_path);
-
-      const companyDb = new sqlite3.Database(companyDbPath);
-      companyDb.get(
-        `SELECT * FROM transactions ORDER BY transaction_no DESC LIMIT 1`, // Sort by transaction_no
-        (err, lastTransaction) => {
-          companyDb.close();
-          if (err) return reject(`Error fetching last transaction: ${err.message}`);
-          resolve(lastTransaction); // Return only the last transaction
-        }
-      );
-    });
-  });
-}
-
 function searchTransaction(companyId, searchQuery) {
   return new Promise((resolve, reject) => {
     mainDb.get(`SELECT db_path FROM companies WHERE id = ?`, [companyId], (err, row) => {
@@ -238,9 +207,9 @@ function searchTransaction(companyId, searchQuery) {
 
       const query = `
         SELECT * FROM transactions 
-        WHERE transaction_no = ?
+        WHERE transaction_no = ? OR account_code = ?
       `;
-      companyDb.all(query, [searchQuery], (err, rows) => {
+      companyDb.all(query, [searchQuery, searchQuery], (err, rows) => {
         companyDb.close();
         if (err) return reject(err);
         resolve(rows);
@@ -249,38 +218,35 @@ function searchTransaction(companyId, searchQuery) {
   });
 }
 
-function updateTransaction(companyId, transactions) {
+// Update multiple transactions at once
+function updateTransactions(companyId, transactions) {
   return new Promise(async (resolve, reject) => {
     try {
-      const query = `SELECT db_path FROM companies WHERE id = ?`;
-      const relativePath = await new Promise((resolve, reject) => {
-        mainDb.get(query, [companyId], (err, row) => {
-          if (err) return reject(err);
-          if (!row) return reject(new Error('Company not found.'));
-          resolve(row.db_path);
-        });
-      });
+      const dbPath = await getCompanyDbPath(companyId);
+      const db = new sqlite3.Database(dbPath);
+      db.serialize(() => {
+        db.run('BEGIN TRANSACTION;');
 
-      const companyDbPath = path.join(__dirname, relativePath);
-      const companyDb = new sqlite3.Database(companyDbPath);
-
-      companyDb.serialize(() => {
         const updateQuery = `
           UPDATE transactions
-          SET transaction_no = ?, account_code = ?, description = ?, debit = ?, credit = ?, date = ?, account_type = ?
+          SET transaction_no = ?, date = ?, account_code = ?, description = ?, debit = ?, credit = ?, account_type = ?
           WHERE transaction_id = ?
         `;
 
+
         transactions.forEach(transaction => {
-          const { transaction_id, transaction_no, account_code, description, debit, credit, date, account_type } = transaction;
-          companyDb.run(
-            updateQuery,
-            [transaction_no, account_code, description, debit, credit, date, account_type, transaction_id]
-          );
+          db.run(updateQuery, [
+            transaction.transaction_no, transaction.date, transaction.account_code,
+            transaction.description, transaction.debit, transaction.credit, transaction.account_type,
+            transaction.transaction_id
+          ]);
         });
 
-        companyDb.close();
-        resolve(true); // Indicate success
+        db.run('COMMIT;', function (err) {
+          db.close();
+          if (err) return reject(err);
+          resolve(true);
+        });
       });
     } catch (error) {
       reject(error);
@@ -288,6 +254,32 @@ function updateTransaction(companyId, transactions) {
   });
 }
 
+// Delete multiple transactions
+function deleteTransactions(companyId, transactionIds) {
+  return new Promise(async (resolve, reject) => {
+    if (!transactionIds || transactionIds.length === 0) {
+      return resolve('No transactions to delete.');
+    }
+    try {
+      const dbPath = await getCompanyDbPath(companyId);
+      const db = new sqlite3.Database(dbPath);
+      db.serialize(() => {
+        db.run('BEGIN TRANSACTION;');
+        const query = `DELETE FROM transactions WHERE transaction_id = ?`;
+        transactionIds.forEach(transactionId => {
+          db.run(query, [transactionId]);
+        });
+        db.run('COMMIT;', function (err) {
+          db.close();
+          if (err) return reject(err);
+          resolve(true);
+        });
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
 
 
 module.exports = {
@@ -298,5 +290,6 @@ module.exports = {
   getAccounts,
   searchTransaction,
   addTransaction,
-  updateTransaction
+  updateTransactions,
+  deleteTransactions,
 };

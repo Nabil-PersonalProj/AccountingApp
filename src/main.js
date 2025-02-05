@@ -1,6 +1,6 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
-const { addCompany, getCompanies, getTransactions, getAccounts, searchTransaction, addTransaction, updateTransaction } = require('./database/database');
+const { addCompany, getCompanies, getTransactions, getAccounts, searchTransaction, addTransaction, updateTransactions, deleteTransactions } = require('./database/database');
 
 const isMac = process.platform == 'darwin';
 const isDev = process.env.NODE_ENV != 'development';
@@ -52,6 +52,15 @@ function createCompanyWindow(companyId) {
 }
 
 // Register IPC Handlers
+ipcMain.handle('show-message', async (event, message, title) => {
+  await dialog.showMessageBox({
+    type: 'info',
+    title: title,
+    message: message,
+    buttons: ['OK']
+  });
+});
+
 ipcMain.handle('get-companies', async () => {
   try {
     return await getCompanies();
@@ -121,6 +130,7 @@ ipcMain.handle('get-last-transaction', async (event, companyId) => {
 });
 
 ipcMain.handle('search-transaction', async (event, companyId, query) => {
+  console.log(`Searching for transactions in company ${companyId} with query: ${query}`);
   try {
     return await searchTransaction(companyId, query);
   } catch (error) {
@@ -133,7 +143,10 @@ ipcMain.handle('add-transaction', async (event, companyId, transaction) => {
   try {
     console.log('Transaction Received in Main Process:', transaction);
 
-    const result = await addTransaction(companyId, transaction);
+    // Ensure transaction is wrapped in an array
+    const transactionsArray = Array.isArray(transaction) ? transaction : [transaction];
+
+    const result = await addTransaction(companyId, transactionsArray);
     console.log('Transaction inserted: ', result)
     return result;
   } catch (error) {
@@ -143,11 +156,21 @@ ipcMain.handle('add-transaction', async (event, companyId, transaction) => {
   }
 });
 
-ipcMain.handle('update-transaction', async (event, companyId, transaction) => {
+ipcMain.handle('update-transactions', async (event, companyId, transactions) => {
   try {
-    return await updateTransaction(companyId, transaction);
+    console.log,('Transactions to be updated: ', transactions)
+    return await updateTransactions(companyId, transactions);
   } catch (error) {
-    console.error('Error updating transaction:', error);
+    console.error('Error updating transactions:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('delete-transactions', async (event, companyId, transactionIds) => {
+  try {
+    return await deleteTransactions(companyId, transactionIds);
+  } catch (error) {
+    console.error('Error deleting transactions:', error);
     throw error;
   }
 });

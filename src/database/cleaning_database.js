@@ -42,6 +42,6 @@ async function deleteRow(companyId, transactionNo) {
 }
 
 // Usage Example
-deleteRow(3, 4) // Replace with actual companyId and transactionNo
+deleteRow(1, 10) // Replace with actual companyId and transactionNo
     .then((message) => console.log(message))
     .catch((error) => console.error(error));
