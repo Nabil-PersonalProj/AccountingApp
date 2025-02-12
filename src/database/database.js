@@ -208,25 +208,28 @@ async function getAccounts(companyId) {
   });
 }
 
-function searchTransaction(companyId, searchQuery) {
-  return new Promise((resolve, reject) => {
-    mainDb.get(`SELECT db_path FROM companies WHERE id = ?`, [companyId], (err, row) => {
-      if (err) return reject(err);
-      const companyDbPath = path.join(__dirname, row.db_path);
-      const companyDb = new sqlite3.Database(companyDbPath);
+async function searchTransaction(companyId, searchQuery) {
+  try {
+    const companyDbPath = await getCompanyDbPath(companyId); // Ensure we get the correct DB path
+    const companyDb = new sqlite3.Database(companyDbPath);
 
+    return new Promise((resolve, reject) => {
       const query = `
         SELECT * FROM transactions 
-        WHERE transaction_no = ? OR account_code = ?
+        WHERE transaction_no = ? OR account_code = ? OR description LIKE ? OR date = ?
       `;
-      companyDb.all(query, [searchQuery, searchQuery], (err, rows) => {
-        companyDb.close();
+
+      companyDb.all(query, [searchQuery, searchQuery, `%${searchQuery}%`, searchQuery], (err, rows) => {
+        companyDb.close(); // Close the database connection
         if (err) return reject(err);
         resolve(rows);
       });
     });
-  });
+  } catch (error) {
+    return Promise.reject(error);
+  }
 }
+
 
 // Update multiple transactions at once
 function updateTransactions(companyId, transactions) {

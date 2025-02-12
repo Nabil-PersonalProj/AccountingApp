@@ -48,7 +48,7 @@ add date to table
 
 add clickables date, transaction no, account code
 
-description searchable
+description searchable (done) 30mins
 
 error msg calculate difference
 
