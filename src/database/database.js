@@ -38,28 +38,30 @@ async function getCompanyDbPath(companyId) {
 // Add a new company for each company added, the db for that company is also initialized
 function addCompany(name) {
   return new Promise((resolve, reject) => {
-    const relativeDbPath = `company_database/${name.replace(/\s+/g, '_').toLowerCase()}.db`;
-    const absoluteDbPath = path.join(__dirname, relativeDbPath);
+      const relativeDbPath = `company_database/${name.replace(/\s+/g, '_').toLowerCase()}.db`;
+      const absoluteDbPath = path.join(__dirname, relativeDbPath);
 
-    // Add company into main.db
-    const insertStmt = mainDb.prepare(`INSERT INTO companies (name, db_path) VALUES (?,?)`);
-    insertStmt.run(name, relativeDbPath, (err) => {
-      if (err) {
-        insertStmt.finalize();
-        return reject(err);
-      }
+      mainDb.get(`SELECT id FROM companies WHERE name = ?`, [name], (err, row) => {
+          if (err) return reject(err);
+          if (row) return reject(new Error('Company already exists!'));
 
-      // Initialize database for the company
-      initializeCompanyDatabase(absoluteDbPath)
-        .then(() => {
-          insertStmt.finalize();
-          resolve(`Company "${name}" added and database initialized`);
-        })
-        .catch((error) => {
-          insertStmt.finalize();
-          reject(error);
-        });
-    });
+          const insertStmt = mainDb.prepare(`INSERT INTO companies (name, db_path) VALUES (?,?)`);
+          insertStmt.run(name, relativeDbPath, (err) => {
+              if (err) {
+                  insertStmt.finalize();
+                  return reject(err);
+              }
+              initializeCompanyDatabase(absoluteDbPath)
+                  .then(() => {
+                      insertStmt.finalize();
+                      resolve(`Company "${name}" added and database initialized`);
+                  })
+                  .catch((error) => {
+                      insertStmt.finalize();
+                      reject(error);
+                  });
+          });
+      });
   });
 }
 
@@ -150,13 +152,21 @@ function addTransaction(companyId, transactions) {
           VALUES (?, ?, ?, ?, ?, ?, ?)
         `;
 
+        const stmt = db.prepare(insertQuery);
+
         transactions.forEach(transaction => {
-          db.run(insertQuery, [
-            transaction.transaction_no, transaction.account_code,
-            transaction.description, transaction.debit, transaction.credit,
-            new Date().toISOString().split('T')[0], transaction.account_type
+          stmt.run([
+            transaction.transaction_no, 
+            transaction.account_code, 
+            transaction.description, 
+            transaction.debit, 
+            transaction.credit, 
+            transaction.date || new Date().toISOString().split('T')[0], 
+            transaction.account_type
           ]);
         });
+
+        stmt.finalize(); // Finalize the statement
 
         db.run('COMMIT;', function (err) {
           db.close();

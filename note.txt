@@ -1,5 +1,5 @@
 total hours: 64 hrs (before edit)
-edit function: 16 hrs
+edit function: 18 hrs
 
 
 
@@ -46,3 +46,14 @@ adding types of accounts
 add date to table
 
 
+add clickables date, transaction no, account code
+
+description searchable
+
+error msg calculate difference
+
+database bulk insertion(done) 2hrs
+
+at add transaction immediately put next no.
+
+All transactions to groupby transaction no.(done) 1hrs

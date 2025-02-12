@@ -95,16 +95,40 @@ window.addEventListener('DOMContentLoaded', () => {
       transactionsBody.innerHTML = '<tr><td colspan="6">No transactions available.</td></tr>';
       return;
     }
-    transactionsBody.innerHTML = transactions.map(t => `
-      <tr>
-        <td>${t.date}</td>
-        <td>${t.transaction_no}</td>
-        <td>${t.account_code}</td>
-        <td>${t.description}</td>
-        <td>${t.debit}</td>
-        <td>${t.credit}</td>
-      </tr>
-    `).join('');
+    
+    // grouping transactions by no.
+    const groupedTransactions = transactions.reduce((acc, transaction) => {
+      if(!acc[transaction.transaction_no]) {
+        acc[transaction.transaction_no] = []
+      }
+      acc[transaction.transaction_no].push(transaction);
+      return acc;
+    }, {});
+
+    let tableContent = '';
+
+    Object.keys(groupedTransactions).forEach(transactionNo => {
+      tableContent += `
+        <tr class="transaction-group">
+          <td colspan="6"><strong>Transaction No: ${transactionNo}</strong></td>
+        </tr>
+      `;
+
+      groupedTransactions[transactionNo].forEach(t => {
+        tableContent += `
+          <tr>
+            <td>${t.date}</td>
+            <td>${t.transaction_no}</td>
+            <td>${t.account_code}</td>
+            <td>${t.description}</td>
+            <td>${t.debit}</td>
+            <td>${t.credit}</td>
+          </tr>
+        `;
+      });
+    });
+
+    transactionsBody.innerHTML = tableContent;
   }
 
   // Load accounts data into the All Accounts tab
@@ -254,18 +278,12 @@ window.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      await Promise.all(
-        transactions.map(transaction => window.api.addTransaction(currentCompanyId, transaction))
-      );
+      await window.api.addTransaction(currentCompanyId, transactions);
 
       window.api.showMessage('Transactions added successfully!');
       addTransactionModal.style.display = 'none';
 
-      const allTransactions = await window.api.getTransactions(currentCompanyId);
-      const accounts = await window.api.getAccounts(currentCompanyId);
-      loadMainTab(allTransactions);
-      loadTransactionsTab(allTransactions);
-      loadAccountsTab(accounts);
+      refresh(currentCompanyId)
     } catch (error) {
       console.error('Error saving transactions:', error);
       window.api.showMessage('Failed to save transactions.');

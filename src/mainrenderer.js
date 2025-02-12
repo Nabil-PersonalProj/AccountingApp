@@ -54,17 +54,21 @@ cancelCompanyBtn.addEventListener('click', () => {
 saveCompanyBtn.addEventListener('click', async () => {
   const name = companyNameInput.value.trim();
   if (!name) {
-    alert('Company name is required!');
-    return;
+      alert('Company name is required!');
+      return;
   }
 
   try {
-    await window.api.addCompany(name); // Call the exposed API to add the company
-    addCompanyModal.style.display = 'none'; // Close the modal
-    companyNameInput.value = ''; // Clear input field
-    loadCompanies(); // Refresh the company list
+      const response = await window.api.addCompany(name);
+      if (!response.success) {
+          alert(response.message);
+          return;
+      }
+      addCompanyModal.style.display = 'none';
+      companyNameInput.value = '';
+      loadCompanies();
   } catch (error) {
-    console.error('Error adding company:', error);
-    alert('Failed to add company. Please try again.');
+      console.error('Error adding company:', error);
+      alert('Failed to add company. Please try again.');
   }
 });

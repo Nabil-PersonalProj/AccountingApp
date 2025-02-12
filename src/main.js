@@ -18,9 +18,7 @@ function createMainWindow() {
   });
 
   // Open devtools if in dev
-  if (isDev) {
-    mainWindow.webContents.openDevTools();
-  }
+  
   
   mainWindow.loadFile(path.join(__dirname, 'windows', 'mainWindowcard.html'));
   console.log('main window loaded');
@@ -72,10 +70,10 @@ ipcMain.handle('get-companies', async () => {
 
 ipcMain.handle('add-company', async (event, name) => {
   try {
-    return await addCompany(name);
+    return { success: true, message: await addCompany(name) };
   } catch (error) {
-    console.error('Error in handler for add-company:', error);
-    throw error;
+    console.error('Error adding company:', error);
+    return { success: false, message: error.message };
   }
 });
 
