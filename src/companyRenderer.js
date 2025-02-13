@@ -116,14 +116,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
       groupedTransactions[transactionNo].forEach(t => {
         tableContent += `
-          <tr>
-            <td>${t.date}</td>
-            <td>${t.transaction_no}</td>
-            <td>${t.account_code}</td>
-            <td>${t.description}</td>
-            <td>${t.debit}</td>
-            <td>${t.credit}</td>
-          </tr>
+            <tr>
+              <td><span class="clickable date" data-date="${t.date}">${t.date}</span></td>
+              <td><span class="clickable transaction-no" data-transaction="${t.transaction_no}">${t.transaction_no}</span></td>
+              <td><span class="clickable account-code" data-account="${t.account_code}">${t.account_code}</span></td>
+              <td>${t.description}</td>
+              <td>${t.debit}</td>
+              <td>${t.credit}</td>
+            </tr>
         `;
       });
     });
@@ -140,7 +140,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     accountsBody.innerHTML = accounts.map(a => `
       <tr>
-        <td>${a.account_code}</td>
+        <td><span class="clickable account-code" data-account="${a.account_code}">${a.account_code}</span></td>
         <td>${a.description}</td>
         <td>${a.debit}</td>
         <td>${a.credit}</td>
@@ -218,11 +218,65 @@ window.addEventListener('DOMContentLoaded', () => {
       window.api.showMessage('Search query is empty. Please enter a transaction number or description.');
     }
   });
+  ///////////////////// clickable on date account code and transaction no.////////////////////////////////////
+  document.addEventListener('click', async (event) => {
+    let searchQuery = null;
+
+    // Click on a Date
+    if (event.target.classList.contains('date')) {
+      searchQuery = event.target.dataset.date;
+    }
+
+    // Click on a Transaction No.
+    if (event.target.classList.contains('transaction-no')) {
+      searchQuery = event.target.dataset.transaction;
+    }
+
+    // Click on an Account Code
+    if (event.target.classList.contains('account-code')) {
+      searchQuery = event.target.dataset.account;
+    }
+
+    if (searchQuery) {
+      // Switch to the Main Transactions tab
+      document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
+      
+      document.querySelector('.tab-button').classList.add('active'); // Activate Main Transaction Tab
+      document.getElementById('main-tab').style.display = 'block'; 
+
+      // Update search bar and trigger search
+      const searchInput = document.getElementById('transactionSearch');
+      searchInput.value = searchQuery;
+
+      // Simulate search button click
+      document.getElementById('searchTransactionBtn').click();
+    }
+  });
+    
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ///////////////////////////////////// adding transactions///////////////////////////////////////////////////
   // Open the Add Transaction modal
-  addTransactionBtn.addEventListener('click', () => {
+  addTransactionBtn.addEventListener('click', async () => {
     addTransactionModal.style.display = 'block';
+
+    // Clear transaction fields
+    document.getElementById('transactionDate').value = '';
+    document.getElementById('transactionRows').innerHTML = '';
+
+    try{
+      const lastTransaction = await window.api.getLastTransaction(currentCompanyId);
+      const nextTransactionNo = lastTransaction ? lastTransaction.transaction_no + 1 : 1;
+
+      document.getElementById('transactionNo').value = nextTransactionNo;
+    } catch (error) {
+      console.error('Error fetching last transaction:', error);
+      document.getElementById('transactionNo').value = '';
+    }
+
+    const warningElement = document.getElementById('addBalanceWarning');
+    warningElement.textContent = '';
+    warningElement.style.display = 'none';
   });
 
   // Close the Add Transaction modal and clear fields
@@ -238,6 +292,7 @@ window.addEventListener('DOMContentLoaded', () => {
   saveTransactionBtn.addEventListener('click', async () => {
     const transactionNo = document.getElementById('transactionNo').value;
     const transactionDate = document.getElementById('transactionDate').value;
+    const warningElement = document.getElementById('addBalanceWarning');
 
     if (!transactionNo || !transactionDate) {
       window.api.showMessage('Transaction No. and Date are required!');
@@ -272,10 +327,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
       const totalDebit = transactions.reduce((sum, t) => sum + t.debit, 0);
       const totalCredit = transactions.reduce((sum, t) => sum + t.credit, 0);
+      const addDifference = Math.abs(totalDebit - totalCredit);
 
       if (totalDebit !== totalCredit) {
-        window.api.showMessage('Total Debit is not equal to Total Credit. Please Adjust transactions');
+        warningElement.textContent = `Total Debit (${totalDebit}) is not equal to Total Credit (${totalCredit}). Difference: ${addDifference}.Please adjust transactions.`;
+        warningElement.style.display = 'block';
         return;
+      } else {
+        warningElement.style.display = 'none';
       }
 
       await window.api.addTransaction(currentCompanyId, transactions);
@@ -371,6 +430,10 @@ window.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    const warningElement = document.getElementById('editBalanceWarning');
+    warningElement.textContent = '';
+    warningElement.style.display = 'none';
+
     try{ 
       const transactions = await window.api.getTransactions(currentCompanyId);
       const filteredTransactions = transactions.filter(t => t.transaction_no === transactionNo);
@@ -392,11 +455,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // add row btn
   document.getElementById('addEditRowBtn').addEventListener('click', () => {
-    const today = new Date().toISOString().split('T')[0]; // Get today's date
   
     const newRow = `
       <tr data-transaction-id="">
-        <td><input type="date" class="transactionDate" value="${today}" required></td>
         <td>
           <select class="transactionType" required>
             <option value="">Select Type</option>
@@ -433,6 +494,10 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
   function populateModal(transactions) {
+    if (transactions.length === 0) return;
+
+    document.getElementById('editTransactionDate').value = transactions[0].date
+
     editTransactionRows.innerHTML = transactions.map(t => {
       const accountType = Object.keys(prefixes).find(type =>
         prefixes[type].some(prefix => t.account_code.startsWith(prefix))
@@ -446,7 +511,6 @@ window.addEventListener('DOMContentLoaded', () => {
   
       return `
         <tr data-transaction-id="${t.transaction_id}">
-          <td><input type="date" class="transactionDate" value="${t.date}" required></td> <!-- ✅ Added Date Column -->
           <td>
             <select class="transactionType" required>
               <option value="">Select Type</option>
@@ -480,11 +544,12 @@ window.addEventListener('DOMContentLoaded', () => {
   saveEditTransactionBtn.addEventListener('click', async () => {
     const rows = Array.from(document.querySelectorAll('#editTransactionRows tr'));
     const transactionNo = document.getElementById('editTransactionNo').textContent;
+    const selectedDate =  document.getElementById('editTransactionDate').value;
 
     const updatedTransactions = rows.map(row => ({
       transaction_id: row.dataset.transactionId || null,
       transaction_no: transactionNo,
-      date: row.querySelector('.transactionDate').value,
+      date: selectedDate,
       account_type: row.querySelector('.transactionType').value,
       account_code: `${row.querySelector('.accountPrefix').value}${row.querySelector('.accountCode').value}`,
       description: row.querySelector('.description').value || '',
@@ -494,10 +559,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const totalDebit = updatedTransactions.reduce((sum, t) => sum + t.debit, 0);
     const totalCredit = updatedTransactions.reduce((sum, t) => sum + t.credit, 0);
+    const editDifference = Math.abs(totalDebit - totalCredit);
 
     const warningElement = document.getElementById('editBalanceWarning');
     if (totalDebit !== totalCredit) {
-      warningElement.textContent = `Total Debit (${totalDebit}) is not equal to Total Credit (${totalCredit}). Please adjust transactions.`;
+      warningElement.textContent = `Total Debit (${totalDebit}) is not equal to Total Credit (${totalCredit}). Difference: ${editDifference}.Please adjust transactions.`;
       warningElement.style.display = 'block';
       return;
     } else {

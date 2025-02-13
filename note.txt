@@ -1,5 +1,8 @@
-total hours: 64 hrs (before edit)
+total hours b4 edit: 64 hrs (before edit)
 edit function: 18 hrs
+plus: 6 hrs
+
+total:
 
 
 
@@ -46,14 +49,20 @@ adding types of accounts
 add date to table
 
 
-add clickables date, transaction no, account code
+add clickables date, transaction no, account code (done)
 
-description searchable (done) 30mins
+description searchable (done)
 
-error msg calculate difference
+error msg calculate difference done
 
-database bulk insertion(done) 2hrs
+database bulk insertion(done) 
 
-at add transaction immediately put next no.
+at add transaction immediately put next no. (done)
 
-All transactions to groupby transaction no.(done) 1hrs
+All transactions to groupby transaction no.(done)
+
+
+
+
+
+

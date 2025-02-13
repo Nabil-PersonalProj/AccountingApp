@@ -59,13 +59,15 @@
         <h2>Add New Transactions</h2>
     
         <div class="form-group">
-          <label for="transactionNo">Transaction No:</label>
+          <label for="transactionNo"><strong>Transaction No:</strong></label>
           <input type="number" id="transactionNo" required placeholder="Enter transaction number">
         </div>
         <div class="form-group">
-          <label for="transactionDate">Date:</label>
+          <label for="transactionDate"><strong>Transaction Date:</strong></label>
           <input type="date" id="transactionDate" required>
         </div>
+        <p id="addBalanceWarning" style="color: red; font-weight: bold; display: none;"></p>
+
     
         <table class="transaction-table">
           <thead>
@@ -122,11 +124,12 @@
       <div class="modal-content">
         <h2>Edit Transactions</h2>
         <p><strong>Editing Transaction No: <span id="editTransactionNo"></span></strong></p>
+        <label for="editTransactionDate"><strong>Transaction Date:</strong></label>
+        <input type="date" id="editTransactionDate" required>
         <p id="editBalanceWarning" style="color: red; font-weight: bold; display: none;"></p>
         <table class="transaction-table">
           <thead>
             <tr>
-              <th>Date</th>
               <th>Account Type</th>
               <th>Account Prefix</th>
               <th>Account Code</th>
@@ -162,7 +165,16 @@
             <th>Credit</th>
           </tr>
         </thead>
-        <tbody id="transactions-body"></tbody>
+        <tbody id="transactions-body">
+          <tr>
+            <td><span class="clickable date" data-date="2024-02-01">2024-02-01</span></td>
+            <td><span class="clickable transaction-no" data-transaction="1001">1001</span></td>
+            <td><span class="clickable account-code" data-account="SA100">SA100</span></td>
+            <td>Sample Transaction</td>
+            <td>100</td>
+            <td>0</td>
+          </tr>
+        </tbody>
       </table>
     </section>
 
@@ -178,7 +190,14 @@
             <th>Credit</th>
           </tr>
         </thead>
-        <tbody id="accounts-body"></tbody>
+        <tbody id="accounts-body">
+          <tr>
+            <td><span class="clickable account-code" data-account="SA100">SA100</span></td>
+            <td>Sales Account</td>
+            <td>5000</td>
+            <td>0</td>
+          </tr>
+        </tbody>
       </table>
     </section>
   </div>
