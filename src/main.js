@@ -1,9 +1,11 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Menu } = require('electron');
 const path = require('path');
-const { addCompany, getCompanies, getTransactions, getAccounts, searchTransaction, addTransaction, updateTransactions, deleteTransactions, getLastTransaction } = require('./database/database');
+const { addCompany, getCompanies, getTransactions, getAccounts, searchTransaction, addTransaction, updateTransactions, deleteTransactions, getLastTransaction, deleteCompany } = require('./database/database');
 
 const isMac = process.platform == 'darwin';
 const isDev = process.env.NODE_ENV != 'development';
+
+let mainWindow
 
 // main window
 function createMainWindow() {
@@ -173,10 +175,66 @@ ipcMain.handle('delete-transactions', async (event, companyId, transactionIds) =
   }
 });
 
+ipcMain.handle('delete-company', async (event, companyId) => {
+  try {
+    return await deleteCompany(companyId);
+  } catch(error) {
+    console.error('Error deleting company:', error);
+    throw error;
+  }
+})
+
+function getActiveCompanyWindow() {
+  return BrowserWindow.getFocusedWindow(); // Returns the currently focused window
+}
+
+// Menu
+// const menuTemplate = [
+//   {
+//     label: 'File',
+//     submenu: [
+//       { role: 'quit'}
+//     ]
+//   },
+//   {
+//     label: 'Tools',
+//     submenu: [
+//       {
+//         label: 'Add Transaction',
+//         accelerator: 'Ctrl+A',
+//         click: () => {
+//           const companyWindow = getActiveCompanyWindow();
+//           if (companyWindow) {
+//             companyWindow.webContents.send('open-add-transaction');
+//           } else {
+//             console.error('No active company window found');
+//           }
+//         }
+//       },
+//       {
+//         label: 'Edit Transaction',
+//         accelerator: 'Ctrl+E',
+//         click: () => {
+//           const companyWindow = getActiveCompanyWindow();
+//           if (companyWindow) {
+//               companyWindow.webContents.send('open-edit-transaction');
+//           } else {
+//               console.error('No active company window found');
+//           }
+//         }
+//       }
+//     ]
+//   }
+// ]
+
 
 // starting the app
 app.whenReady().then(() => {
   createMainWindow();
+
+  //const menu = Menu.buildFromTemplate(menuTemplate);
+  //Menu.setApplicationMenu(menu);
+
   console.log('App is ready')
 
   app.on('activate', () => {

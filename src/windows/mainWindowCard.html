@@ -17,6 +17,7 @@
     <!-- Filters and Add Button -->
     <div class="toolbar">
       <button id="addCompanyBtn" class="add-button">+</button>
+      <button id="deleteCompanyBtn" class="delete-button">Delete</button>
     </div>
 
     <!-- Company Cards Section -->
@@ -37,12 +38,29 @@
     <div class="modal-content">
       <h2>Add New Company</h2>
       <div class="form-group">
-        <label for="companyNameInput">Company Name:</label>
+        <label for="companyNameInput"><p><strong>Company Name:</strong></p></label>
         <input type="text" id="companyNameInput" placeholder="Enter company name" required>
       </div>
       <div class="form-actions">
         <button id="saveCompanyBtn" class="add-button">Save</button>
         <button id="cancelCompanyBtn" class="filter-button">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Company Modal -->
+  <div id="deleteCompanyModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <h2>Delete Company</h2>
+      <div class="form-group">
+        <label for="deleteCompanySelect">Select Company:</label>
+        <select id="deleteCompanySelect">
+          <!-- Company options will be populated dynamically -->
+        </select>
+      </div>
+      <div class="form-actions">
+        <button id="confirmDeleteCompanyBtn" class="delete-button">Delete</button>
+        <button id="cancelDeleteCompanyBtn" class="filter-button">Cancel</button>
       </div>
     </div>
   </div>

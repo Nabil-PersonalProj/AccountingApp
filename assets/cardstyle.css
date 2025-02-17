@@ -37,6 +37,7 @@
     justify-content: flex-end;
     align-items: center;
     margin-bottom: 20px;
+    gap: 10px;
   }
   
   .add-button,
@@ -54,6 +55,20 @@
   .add-button:hover,
   .filter-button:hover {
     background-color: #0056b3;
+  }
+
+  .delete-button {
+    background-color: #007BFF; /* Red */
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  
+  .delete-button:hover {
+    background-color: #0056b3; /* Darker red on hover */
   }
   
   .company-cards {
@@ -149,5 +164,6 @@
   .add-button, .filter-button {
     margin: 5px;
   }
+
   
   

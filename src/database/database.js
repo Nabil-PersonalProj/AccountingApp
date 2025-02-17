@@ -2,6 +2,7 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
 const { resolve } = require('dns');
+const { rejects } = require('assert');
 
 // Ensure the `database/` folder exists
 const databaseFolder = path.join(__dirname, 'company_database');
@@ -74,6 +75,29 @@ function getCompanies() {
     });
   });
 }
+
+async function deleteCompany(companyId) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const dbPath = await getCompanyDbPath(companyId);
+
+      // Delete the company record from main.db
+      mainDb.run(`DELETE FROM companies WHERE id = ?`, [companyId], (deleteErr) => {
+        if (deleteErr) return reject(deleteErr);
+
+        // Delete the company's database file
+        fs.unlink(dbPath, (unlinkErr) => {
+          if (unlinkErr && unlinkErr.code !== 'ENOENT') return reject(unlinkErr);
+          resolve('Company deleted successfully');
+        });
+      });
+
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
 
 // Initialize a company's database with the `transactions` table
 function initializeCompanyDatabase(dbPath) {
@@ -305,4 +329,5 @@ module.exports = {
   addTransaction,
   updateTransactions,
   deleteTransactions,
+  deleteCompany,
 };

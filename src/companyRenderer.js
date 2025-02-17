@@ -416,6 +416,19 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     }
   }
+
+  document.addEventListener('keydown', (event) => {
+    if(event.ctrlKey && event.key.toLowerCase() === 'a') {
+      event.preventDefault();
+      addTransactionModal.style.display = 'block';
+      // addTransactionBtn.click();
+    }
+
+    if(event.ctrlKey && event.key.toLowerCase() === 'e'){
+      event.preventDefault();
+      editTransactionBtn.click();
+    }
+  });
   ////////////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////// edit transactions /////////////////////////////////////////////////////////
   // Open the Edit Transaction modal
@@ -627,5 +640,29 @@ window.addEventListener('DOMContentLoaded', () => {
   cancelEditTransactionBtn.addEventListener('click', () => {
     editTransactionModal.style.display = 'none';
     refresh(currentCompanyId)
+  });
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////// key binds /////////////////////////////////////////////////////////
+  document.addEventListener('keydown', (event) => {
+    if(event.ctrlKey && event.key.toLowerCase() === 'n') {
+      event.preventDefault();
+      addTransactionBtn.click();
+    }
+
+    if(event.ctrlKey && event.key.toLowerCase() === 'e'){
+      event.preventDefault();
+      editTransactionBtn.click();
+    }
+  });
+
+  window.api.onOpenAddTransaction(() => {
+    console.log('Menu: Open Add Transaction Modal');
+    addTransactionBtn.click();
+  });
+  
+  window.api.onOpenEditTransaction(() => {
+    console.log('Menu: Open Edit Transaction Modal');
+    editTransactionBtn.click();
   });
 });
