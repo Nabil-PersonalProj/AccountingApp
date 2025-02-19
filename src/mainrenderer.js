@@ -28,21 +28,16 @@ async function loadCompanies() {
 
 // load company cards
 function renderCompanyCards(companies) {
-  companyList.innerHTML = ''; // Clear existing cards
+  const fragment = document.createDocumentFragment();
   companies.forEach((company) => {
     const card = document.createElement('div');
     card.className = 'company-card';
-    card.innerHTML = `
-      <div class="company-name">${company.name}</div>
-    `;
-
-    // event listener to open company window
-    card.addEventListener('click', () => {
-      window.api.openCompanyWindow(company.id);
-    });
-
-    companyList.appendChild(card);
+    card.innerHTML = `<div class="company-name">${company.name}</div>`;
+    card.addEventListener('click', () => window.api.openCompanyWindow(company.id));
+    fragment.appendChild(card);
   });
+  companyList.innerHTML = ''; // Clear only once
+  companyList.appendChild(fragment); // Append all at once
 }
 
 // Handle adding a new company

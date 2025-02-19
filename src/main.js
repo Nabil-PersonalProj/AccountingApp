@@ -5,7 +5,7 @@ const { addCompany, getCompanies, getTransactions, getAccounts, searchTransactio
 const isMac = process.platform == 'darwin';
 const isDev = process.env.NODE_ENV != 'development';
 
-let mainWindow
+//let mainWindow
 
 // main window
 function createMainWindow() {

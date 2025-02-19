@@ -62,11 +62,11 @@ All transactions to groupby transaction no.(done)
 task 2.2:
  tools (on hold)
  file import csv (on hold)
- all accounts need to show total (important)
+ all accounts need to show total (important) (done)
  put final balance at the bottom (on hold)
  Account code search bar during add transaction and edit transaction
- new table to keep track of all account code (important)
- delete Company (1hrs)
+ new table to keep track of all account code (important) (2hr)  (done)
+ delete Company (done) (1hr)
  
 
 

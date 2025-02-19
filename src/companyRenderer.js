@@ -45,11 +45,10 @@ window.addEventListener('DOMContentLoaded', () => {
       updateTitle(companyName);
 
       const transactions = await window.api.getTransactions(companyId);
-      const accounts = await window.api.getAccounts(companyId);
 
       loadMainTab(transactions);
       loadTransactionsTab(transactions);
-      loadAccountsTab(accounts);
+      loadAccountsTab(companyId);
 
       setupTabNavigation();
     } catch (error) {
@@ -132,20 +131,30 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   // Load accounts data into the All Accounts tab
-  function loadAccountsTab(accounts) {
-    const accountsBody = document.getElementById('accounts-body');
-    if (!accounts || accounts.length === 0) {
-      accountsBody.innerHTML = '<tr><td colspan="4">No accounts available.</td></tr>';
-      return;
+  async function loadAccountsTab(companyId) {
+    try {
+      const accounts = await window.api.getAccounts(companyId);
+      const accountsBody = document.getElementById('accounts-body');
+  
+      // Handle case where no accounts exist
+      if (!accounts || accounts.length === 0) {
+        accountsBody.innerHTML = '<tr><td colspan="5">No accounts available.</td></tr>';
+        return;
+      }
+  
+      // Populate accounts table
+      accountsBody.innerHTML = accounts.map(a => `
+        <tr>
+          <td>${a.account_code}</td>
+          <td>${a.account_name}</td>
+          <td>${a.account_type}</td>
+          <td>${a.total_debit.toFixed(2)}</td>
+          <td>${a.total_credit.toFixed(2)}</td>
+        </tr>
+      `).join('');
+    } catch (error) {
+      console.error('Error loading accounts:', error);
     }
-    accountsBody.innerHTML = accounts.map(a => `
-      <tr>
-        <td><span class="clickable account-code" data-account="${a.account_code}">${a.account_code}</span></td>
-        <td>${a.description}</td>
-        <td>${a.debit}</td>
-        <td>${a.credit}</td>
-      </tr>
-    `).join('');
   }
 
   // Set up tab navigation
