@@ -189,51 +189,96 @@ function getActiveCompanyWindow() {
 }
 
 // Menu
-// const menuTemplate = [
-//   {
-//     label: 'File',
-//     submenu: [
-//       { role: 'quit'}
-//     ]
-//   },
-//   {
-//     label: 'Tools',
-//     submenu: [
-//       {
-//         label: 'Add Transaction',
-//         accelerator: 'Ctrl+A',
-//         click: () => {
-//           const companyWindow = getActiveCompanyWindow();
-//           if (companyWindow) {
-//             companyWindow.webContents.send('open-add-transaction');
-//           } else {
-//             console.error('No active company window found');
-//           }
-//         }
-//       },
-//       {
-//         label: 'Edit Transaction',
-//         accelerator: 'Ctrl+E',
-//         click: () => {
-//           const companyWindow = getActiveCompanyWindow();
-//           if (companyWindow) {
-//               companyWindow.webContents.send('open-edit-transaction');
-//           } else {
-//               console.error('No active company window found');
-//           }
-//         }
-//       }
-//     ]
-//   }
-// ]
+const menuTemplate = [
+  {
+    label: 'File',
+    submenu: [
+      {
+        label: 'New Company',
+        accelerator: 'Ctrl+L',
+        click: () => {
+          const mainWindow = getActiveCompanyWindow();
+          if (mainWindow) {
+            mainWindow.webContents.send('open-new-company-modal');
+          }
+        }
+      },
+      {
+        label: 'Open',
+        accelerator: 'Ctrl+O',
+        click: () => {
+          const mainWindow = getActiveCompanyWindow();
+          if (mainWindow) {
+            mainWindow.webContents.send('open-existing-company');
+          }
+        }
+      },
+      { type: 'separator' },
+      { role: 'quit' } // Standard quit function
+    ]
+  },
+  {
+    label: 'Edit',
+    submenu: [
+      { role: 'undo' },
+      { role: 'redo' },
+      { type: 'separator' },
+      { role: 'cut' },
+      { role: 'copy' },
+      { role: 'paste' },
+      { role: 'selectAll' }
+    ]
+  },
+  {
+    label: 'View',
+    submenu: [
+      { role: 'reload' },
+      { role: 'toggleDevTools' },
+      { type: 'separator' },
+      { role: 'togglefullscreen' }
+    ]
+  },
+  {
+    label: 'Window',
+    submenu: [
+      { role: 'minimize' },
+      { role: 'close' }
+    ]
+  },
+  {
+    label: 'Tools',
+    submenu: [
+      {
+        label: 'Add Transaction',
+        accelerator: 'Ctrl+N',
+        click: () => {
+          const companyWindow = getActiveCompanyWindow();
+          if (companyWindow) {
+            companyWindow.webContents.send('open-add-transaction');
+          }
+        }
+      },
+      {
+        label: 'Edit Transaction',
+        accelerator: 'Ctrl+E',
+        click: () => {
+          const companyWindow = getActiveCompanyWindow();
+          if (companyWindow) {
+            companyWindow.webContents.send('open-edit-transaction');
+          }
+        }
+      }
+    ]
+  }
+];
 
 
 // starting the app
 app.whenReady().then(() => {
   createMainWindow();
 
-  //const menu = Menu.buildFromTemplate(menuTemplate);
-  //Menu.setApplicationMenu(menu);
+  const menu = Menu.buildFromTemplate(menuTemplate);
+  Menu.setApplicationMenu(menu);
 
   console.log('App is ready')
 

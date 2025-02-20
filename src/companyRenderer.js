@@ -65,6 +65,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Load the main tab with the latest transactions
   function loadMainTab(transactions) {
+    console.log("loading main tab");
     if (!transactions || transactions.length === 0) {
       transactionBody.innerHTML = '<tr><td colspan="6">No transactions available.</td></tr>';
       return;
@@ -89,6 +90,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Load all transactions into the All Transactions tab
   function loadTransactionsTab(transactions) {
+    console.log("loading transaction tab");
     const transactionsBody = document.getElementById('transactions-body');
     if (!transactions || transactions.length === 0) {
       transactionsBody.innerHTML = '<tr><td colspan="6">No transactions available.</td></tr>';
@@ -132,7 +134,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Load accounts data into the All Accounts tab
   async function loadAccountsTab(companyId) {
+    console.log("loading accounts tab");
     try {
+      console.log("Getting company ID: ", companyId);
       const accounts = await window.api.getAccounts(companyId);
       const accountsBody = document.getElementById('accounts-body');
   
@@ -175,10 +179,9 @@ window.addEventListener('DOMContentLoaded', () => {
   // Refresh all tabs
   async function refresh(companyId) {
     const transactions = await window.api.getTransactions(companyId);
-    const accounts = await window.api.getAccounts(companyId);
     loadMainTab(transactions);
     loadTransactionsTab(transactions);
-    loadAccountsTab(accounts);
+    loadAccountsTab(companyId);
   }
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////// Search transactions ///////////////////////////////////////////////////

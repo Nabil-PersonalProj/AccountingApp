@@ -34,8 +34,14 @@ mainDb.serialize(() => {
 async function getCompanyDbPath(companyId) {
   return new Promise((resolve, reject) => {
     mainDb.get( `SELECT transactions_db_path, accounts_db_path FROM companies WHERE id = ?`, [companyId], (err, row) => {
-      if (err) return reject(err);
-      if (!row) return reject(new Error('Company not found.'));
+      if (err) {
+        console.error("Database Error: ", err);
+        return reject(err);
+      }
+      if (!row) {
+        console.error("Company not found: ", companyId)
+        return reject(new Error('Company not found.'));
+      }
       resolve({
         transactionsDbPath: path.join(__dirname, row.transactions_db_path),
         accountsDbPath: path.join(__dirname, row.accounts_db_path)
