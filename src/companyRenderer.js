@@ -24,17 +24,6 @@ window.addEventListener('DOMContentLoaded', () => {
   let currentCompanyId = null;
   let originalTransactionSnapshot = []; // Store original transactions
 
-  // Prefix mapping for transaction types
-  const prefixes = {
-    asset: ['CA', 'CB', 'FA', 'PD'],
-    liabilities: ['CL'],
-    expense: ['EX'],
-    equity: ['SC'],
-    profit: ['PL'],
-    sales: ['SA'],
-    debtors: ['TD'],
-    creditors: ['TC']
-  };
   ////////////////////////////////////////// all the functions///////////////////////////////////////////////////////
   // Load company data when the page opens
   window.api.loadTransactions(async (companyId) => {
@@ -394,27 +383,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   });
   
-  function updateAccountPrefix(selectElement) {
-    const selectedType = selectElement.value;
-    const row = selectElement.closest('tr');
-    const prefixElement = row.querySelector('.accountPrefix');
-  
-    prefixElement.innerHTML = '<option value="">Select Prefix</option>';
-  
-    if (prefixes[selectedType]) {
-      prefixes[selectedType].forEach(prefix => {
-        const option = document.createElement('option');
-        option.value = prefix;
-        option.textContent = prefix;
-        prefixElement.appendChild(option);
-      });
-  
-      // Auto-select first prefix if available
-      if (prefixes[selectedType].length > 0) {
-        prefixElement.value = prefixes[selectedType][0];
-      }
-    }
-  }
 
   async function fetchAccountCodes(companyId) {
     try {
@@ -464,36 +432,32 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
   // add row btn
-  document.getElementById('addEditRowBtn').addEventListener('click', () => {
+  async function addEditTransactionRow() {
+    const accountCodes = await fetchAccountCodes(currentCompanyId);
+
+    if (accountCodes.length === 0) {
+      window.api.showMessage("No accounts available. Please add accounts first.");
+      return;
+    }
   
-    const newRow = `
-      <tr data-transaction-id="">
-        <td>
-          <select class="transactionType" required>
-            <option value="">Select Type</option>
-            ${Object.keys(prefixes).map(type => `
-              <option value="${type}">${type.charAt(0).toUpperCase() + type.slice(1)}</option>
-            `).join('')}
-          </select>
-        </td>
-        <td>
-          <select class="accountPrefix" required>
-            <option value="">Select Prefix</option>
-          </select>
-        </td>
-        <td><input type="text" class="accountCode" required></td>
-        <td><input type="text" class="description"></td>
-        <td><input type="number" class="debit" step="0.01" placeholder="0"></td>
-        <td><input type="number" class="credit" step="0.01" placeholder="0"></td>
-        <td><button class="remove-edit-row-btn">Remove</button></td>
-      </tr>
+    const newRow = document.createElement("tr");
+    newRow.innerHTML = `
+      <td>
+        <select class="accountCode" required>
+          <option value="">Select Account</option>
+          ${accountCodes.map(code => `<option value="${code}">${code}</option>`).join('')}
+        </select>
+      </td>
+      <td><input type="text" class="description"></td>
+      <td><input type="number" class="debit" step="0.01" placeholder="0"></td>
+      <td><input type="number" class="credit" step="0.01" placeholder="0"></td>
+      <td><button class="remove-edit-row-btn">Remove</button></td>
     `;
-    editTransactionRows.insertAdjacentHTML('beforeend', newRow);
+    
+    document.getElementById("editTransactionRows").appendChild(newRow);
+  }
   
-    // Ensure dropdowns update dynamically
-    const newTypeSelect = editTransactionRows.lastElementChild.querySelector('.transactionType');
-    updateAccountPrefix(newTypeSelect);
-  });
+  document.getElementById("addEditRowBtn").addEventListener("click", addEditTransactionRow)
   
   
   // Remove Row Button Functionality
@@ -503,52 +467,35 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  function populateModal(transactions) {
+  async function populateModal(transactions) {
     if (transactions.length === 0) return;
+    
+    const accountCodes = await fetchAccountCodes(currentCompanyId);
 
-    document.getElementById('editTransactionDate').value = transactions[0].date
+    if (accountCodes.length === 0) {
+        window.api.showMessage("No accounts available. Please add accounts first.");
+        return;
+    }
+
+    document.getElementById('editTransactionDate').value = transactions[0].date;
 
     editTransactionRows.innerHTML = transactions.map(t => {
-      const accountType = Object.keys(prefixes).find(type =>
-        prefixes[type].some(prefix => t.account_code.startsWith(prefix))
-      ) || '';
-  
-      const accountPrefix = prefixes[accountType]?.find(prefix =>
-        t.account_code.startsWith(prefix)
-      ) || '';
-  
-      const accountCodeWithoutPrefix = accountPrefix ? t.account_code.replace(accountPrefix, '') : t.account_code;
-  
-      return `
+        return `
         <tr data-transaction-id="${t.transaction_id}">
           <td>
-            <select class="transactionType" required>
-              <option value="">Select Type</option>
-              ${Object.keys(prefixes).map(type => `
-                <option value="${type}" ${type === accountType ? 'selected' : ''}>${type.charAt(0).toUpperCase() + type.slice(1)}</option>
-              `).join('')}
+            <select class="accountCode" required>
+              <option value="">Select Account</option>
+              ${accountCodes.map(code => `<option value="${code}" ${code === t.account_code ? 'selected' : ''}>${code}</option>`).join('')}
             </select>
           </td>
-          <td>
-            <select class="accountPrefix" required>
-              <option value="">Select Prefix</option>
-              ${prefixes[accountType]?.map(prefix => `
-                <option value="${prefix}" ${prefix === accountPrefix ? 'selected' : ''}>${prefix}</option>
-              `).join('') || ''}
-            </select>
-          </td>
-          <td><input type="text" class="accountCode" value="${accountCodeWithoutPrefix}" required></td>
           <td><input type="text" class="description" value="${t.description || ''}"></td>
           <td><input type="number" class="debit" step="0.01" value="${t.debit || 0}" required></td>
           <td><input type="number" class="credit" step="0.01" value="${t.credit || 0}" required></td>
           <td><button class="remove-edit-row-btn">Remove</button></td>
         </tr>
-      `;
+        `;
     }).join('');
-  
-    document.querySelectorAll('.transactionType').forEach(select => updateAccountPrefix(select));
   }
-  
 
   // Save edited transactions
   saveEditTransactionBtn.addEventListener('click', async () => {
@@ -556,16 +503,23 @@ window.addEventListener('DOMContentLoaded', () => {
     const transactionNo = document.getElementById('editTransactionNo').textContent;
     const selectedDate =  document.getElementById('editTransactionDate').value;
 
-    const updatedTransactions = rows.map(row => ({
-      transaction_id: row.dataset.transactionId || null,
-      transaction_no: transactionNo,
-      date: selectedDate,
-      account_type: row.querySelector('.transactionType').value,
-      account_code: `${row.querySelector('.accountPrefix').value}${row.querySelector('.accountCode').value}`,
-      description: row.querySelector('.description').value || '',
-      debit: parseFloat(row.querySelector('.debit').value) || 0,
-      credit: parseFloat(row.querySelector('.credit').value) || 0,
-    }));
+    const updatedTransactions = rows.map(row => {
+      const accountCode = row.querySelector('.accountCode').value;
+      if (!accountCode) {
+        window.api.showMessage("Please select an account for each transaction.");
+        throw new Error("Validation failed: Missing account code.");
+      }
+    
+      return {
+        transaction_id: row.dataset.transactionId || null,
+        transaction_no: transactionNo,
+        date: selectedDate,
+        account_code: accountCode,
+        description: row.querySelector('.description').value || '',
+        debit: parseFloat(row.querySelector('.debit').value) || 0,
+        credit: parseFloat(row.querySelector('.credit').value) || 0,
+      };
+    });
 
     const totalDebit = updatedTransactions.reduce((sum, t) => sum + t.debit, 0);
     const totalCredit = updatedTransactions.reduce((sum, t) => sum + t.credit, 0);
