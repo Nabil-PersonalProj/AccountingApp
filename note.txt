@@ -67,7 +67,7 @@ task 2.2:
  Account code search bar during add transaction and edit transaction
  new table to keep track of all account code (important) (3hr)  (done)
  delete Company (done) (1hr)
- reconfigure the logic for add and edit
+ reconfigure the logic for add and edit (add done 1.5hrs)
  
 
 

@@ -71,8 +71,6 @@
         <table class="transaction-table">
           <thead>
             <tr>
-              <th>Account Type</th>
-              <th>Account Prefix</th>
               <th>Account Code</th>
               <th>Description</th>
               <th>Debit</th>
@@ -80,33 +78,7 @@
               <th>Action</th>
             </tr>
           </thead>
-          <tbody id="transactionRows">
-            <tr>
-              <td>
-                <select class="transactionType" required>
-                  <option value="">Select Type</option>
-                  <option value="asset">Asset</option>
-                  <option value="liabilities">Liabilities</option>
-                  <option value="expense">Expense</option>
-                  <option value="equity">Equity</option>
-                  <option value="profit">Profit</option>
-                  <option value="sales">Sales</option>
-                  <option value="debtors">Debtors</option>
-                  <option value="creditors">Creditors</option>
-                </select>
-              </td>
-              <td>
-                <select class="accountPrefix" required>
-                  <option value="">Select Prefix</option>
-                </select>
-              </td>
-              <td><input type="text" class="accountCode" required placeholder="Code"></td>
-              <td><input type="text" class="description" placeholder="Description"></td>
-              <td><input type="number" class="debit" step="0.01" placeholder="Debit"></td>
-              <td><input type="number" class="credit" step="0.01" placeholder="Credit"></td>
-              <td><button class="remove-row-btn">Remove</button></td>
-            </tr>
-          </tbody>
+          <tbody id="transactionRows"></tbody>
         </table>
     
         <button id="addRowBtn" class="add-button">Add Row</button>

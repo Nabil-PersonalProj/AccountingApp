@@ -19,11 +19,13 @@ if (!fs.existsSync(accountsFolder)) {
 const mainDbPath = path.join(__dirname, 'main.db');
 const mainDb = new sqlite3.Database(mainDbPath);
 
+////////////////////////////////////////// Maindb ////////////////////////////////////////////////////////
 // Create the main `companies` table if it doesn't exist
 mainDb.serialize(() => {
   mainDb.run(`
     CREATE TABLE IF NOT EXISTS companies (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT UNIQUE NOT NULL,
       transactions_db_path TEXT NOT NULL,
       accounts_db_path TEXT NOT NULL
     )
@@ -98,19 +100,24 @@ async function deleteCompany(companyId) {
     try {
       const { transactionsDbPath, accountsDbPath } = await getCompanyDbPath(companyId);
 
-      // Delete the company record from main.db
       mainDb.run(`DELETE FROM companies WHERE id = ?`, [companyId], (deleteErr) => {
         if (deleteErr) return reject(deleteErr);
 
-        // Delete transactions database
-        fs.unlink(transactionsDbPath, (unlinkErr) => {
-          if (unlinkErr && unlinkErr.code !== 'ENOENT') return reject(unlinkErr);
-        });
-
-        // Delete accounts database
-        fs.unlink(accountsDbPath, (unlinkErr) => {
-          if (unlinkErr && unlinkErr.code !== 'ENOENT') return reject(unlinkErr);
-        });
+        // Safely delete databases
+        try {
+          if (fs.existsSync(transactionsDbPath)) {
+            fs.unlink(transactionsDbPath, (err) => {
+              if (err) console.error(`Error deleting transactions DB:`, err);
+            });
+          }
+          if (fs.existsSync(accountsDbPath)) {
+            fs.unlink(accountsDbPath, (err) => {
+              if (err) console.error(`Error deleting accounts DB:`, err);
+            });
+          }
+        } catch (error) {
+          console.error('Error deleting company databases:', error);
+        }
 
         resolve('Company and its databases deleted successfully');
       });
@@ -120,6 +127,8 @@ async function deleteCompany(companyId) {
   });
 }
 
+
+////////////////////////////////////////// Companydb ////////////////////////////////////////////////////////
 
 // Initialize a company's database with the `transactions` table
 function initializeTransactionDatabase(dbPath) {
@@ -134,8 +143,7 @@ function initializeTransactionDatabase(dbPath) {
           description TEXT,
           debit REAL DEFAULT 0,
           credit REAL DEFAULT 0,
-          date TEXT DEFAULT CURRENT_DATE,
-          account_type TEXT NOT NULL
+          date TEXT DEFAULT CURRENT_DATE
         )
       `, (err) => {
         if (err) {
@@ -143,25 +151,6 @@ function initializeTransactionDatabase(dbPath) {
           return reject(err);
         }
         db.close();
-        resolve();
-      });
-    });
-  });
-}
-
-function initializeAccountsDatabase(dbPath) {
-  return new Promise((resolve, reject) => {
-    const db = new sqlite3.Database(dbPath);
-    db.serialize(() => {
-      db.run(`
-        CREATE TABLE IF NOT EXISTS accounts (
-          account_code TEXT PRIMARY KEY,
-          account_name TEXT NOT NULL,
-          account_type TEXT NOT NULL
-        )
-      `, (err) => {
-        db.close();
-        if(err) return reject(err);
         resolve();
       });
     });
@@ -213,8 +202,8 @@ function addTransaction(companyId, transactions) {
         db.run('BEGIN TRANSACTION;');
 
         const insertQuery = `
-          INSERT INTO transactions (transaction_no, account_code, description, debit, credit, date, account_type)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO transactions (transaction_no, account_code, description, debit, credit, date)
+          VALUES (?, ?, ?, ?, ?, ?)
         `;
 
         const stmt = db.prepare(insertQuery);
@@ -226,8 +215,7 @@ function addTransaction(companyId, transactions) {
             transaction.description, 
             transaction.debit, 
             transaction.credit, 
-            transaction.date || new Date().toISOString().split('T')[0], 
-            transaction.account_type
+            transaction.date || new Date().toISOString().split('T')[0]
           ]);
         });
 
@@ -241,66 +229,6 @@ function addTransaction(companyId, transactions) {
       });
     } catch (error) {
       reject(error);
-    }
-  });
-}
-
-
-async function getAccounts(companyId) {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const { accountsDbPath, transactionsDbPath } = await getCompanyDbPath(companyId);
-      if (!accountsDbPath || !transactionsDbPath) {
-        return resolve([]); // Return empty array if paths are missing
-      }
-
-      const accountsDb = new sqlite3.Database(accountsDbPath);
-      const transactionsDb = new sqlite3.Database(transactionsDbPath);
-
-      accountsDb.all(`SELECT account_code, account_name, account_type FROM accounts`, [], (err, accounts) => {
-        if (err) {
-          accountsDb.close();
-          transactionsDb.close();
-          console.error('Error fetching accounts for ${companyId}:', err);
-          return reject(err);
-        }
-
-        if (!accounts || accounts.length === 0) {
-          accountsDb.close();
-          transactionsDb.close();
-          return resolve([]); // no accounts found
-        }
-
-        const accountPromises = accounts.map(account => {
-          return new Promise((resolveAccount) => {
-            const query = `
-              SELECT 
-                COALESCE(SUM(debit), 0) AS total_debit, 
-                COALESCE(SUM(credit), 0) AS total_credit
-              FROM transactions
-              WHERE account_code = ?`;
-            
-            transactionsDb.get(query, [account.account_code], (err, row) => {
-            if (err) {
-                console.error(`Error fetching totals for ${account.account_code}:`, err);
-                resolveAccount({ ...account, total_debit: 0, total_credit: 0 }); // Default values on error
-              } else {
-                resolveAccount({ ...account, total_debit: row.total_debit, total_credit: row.total_credit });
-              }
-            });
-          });
-        });
-
-        // Wait for all totals to be calculated
-        Promise.all(accountPromises).then(updatedAccounts => {
-          accountsDb.close();
-          transactionsDb.close();
-          resolve(updatedAccounts);
-        });
-      });
-    } catch (error) {
-      console.error(`Error retrieving accounts for company ${companyId}:`, error);
-      resolve([]); 
     }
   });
 }
@@ -327,10 +255,10 @@ async function searchTransaction(companyId, searchQuery) {
   }
 }
 
-
 // Update multiple transactions at once
 function updateTransactions(companyId, transactions) {
   return new Promise(async (resolve, reject) => {
+    if (!transactions || transactions.length === 0) return resolve('No transactions to update');
     try {
       const { transactionsDbPath } = await getCompanyDbPath(companyId);
       const db = new sqlite3.Database(transactionsDbPath);
@@ -339,7 +267,7 @@ function updateTransactions(companyId, transactions) {
 
         const updateQuery = `
           UPDATE transactions
-          SET transaction_no = ?, date = ?, account_code = ?, description = ?, debit = ?, credit = ?, account_type = ?
+          SET transaction_no = ?, date = ?, account_code = ?, description = ?, debit = ?, credit = ?
           WHERE transaction_id = ?
         `;
 
@@ -347,7 +275,7 @@ function updateTransactions(companyId, transactions) {
         transactions.forEach(transaction => {
           db.run(updateQuery, [
             transaction.transaction_no, transaction.date, transaction.account_code,
-            transaction.description, transaction.debit, transaction.credit, transaction.account_type,
+            transaction.description, transaction.debit, transaction.credit, 
             transaction.transaction_id
           ]);
         });
@@ -391,6 +319,83 @@ function deleteTransactions(companyId, transactionIds) {
   });
 }
 
+////////////////////////////////////////// Accoutndb ////////////////////////////////////////////////////////
+function initializeAccountsDatabase(dbPath) {
+  return new Promise((resolve, reject) => {
+    const db = new sqlite3.Database(dbPath);
+    db.serialize(() => {
+      db.run(`
+        CREATE TABLE IF NOT EXISTS accounts (
+          account_code TEXT PRIMARY KEY,
+          account_name TEXT NOT NULL,
+          account_type TEXT NOT NULL
+        )
+      `, (err) => {
+        db.close();
+        if(err) return reject(err);
+        resolve();
+      });
+    });
+  });
+}
+
+async function getAccounts(companyId) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const { accountsDbPath, transactionsDbPath } = await getCompanyDbPath(companyId);
+      if (!accountsDbPath || !transactionsDbPath) {
+        return resolve([]);
+      }
+      const accountsDb = new sqlite3.Database(accountsDbPath);
+      const transactionsDb = new sqlite3.Database(transactionsDbPath);
+
+      accountsDb.all(`SELECT account_code, account_name, account_type FROM accounts`, [], (err, accounts) => {
+        if (err) {
+          accountsDb.close();
+          transactionsDb.close(); 
+          console.error('Error fetching accounts for ${companyId}:', err);
+          return reject(err);
+        }
+
+        if (!accounts || accounts.length === 0) {
+          accountsDb.close();
+          transactionsDb.close(); 
+          return resolve([]); // no accounts found
+        }
+
+        const accountPromises = accounts.map(account => {
+          return new Promise((resolveAccount) => {
+            const query = `
+              SELECT 
+                COALESCE(SUM(debit), 0) AS total_debit, 
+                COALESCE(SUM(credit), 0) AS total_credit
+              FROM transactions
+              WHERE account_code = ?`;
+            
+            transactionsDb.get(query, [account.account_code], (err, row) => {
+            if (err) {
+                console.error(`Error fetching totals for ${account.account_code}:`, err);
+                resolveAccount({ ...account, total_debit: 0, total_credit: 0 }); // Default values on error
+              } else {
+                resolveAccount({ ...account, total_debit: row.total_debit, total_credit: row.total_credit });
+              }
+            });
+          });
+        });
+
+        // Wait for all totals to be calculated
+        Promise.all(accountPromises).then(updatedAccounts => {
+          accountsDb.close();
+          transactionsDb.close();
+          resolve(updatedAccounts);
+        });
+      });
+    } catch (error) {
+      console.error(`Error retrieving accounts for company ${companyId}:`, error);
+      resolve([]); 
+    }
+  });
+}
 
 module.exports = {
   addCompany,

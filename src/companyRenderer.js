@@ -314,14 +314,12 @@ window.addEventListener('DOMContentLoaded', () => {
     try {
       const rows = Array.from(document.querySelectorAll('#transactionRows tr'));
       const transactions = rows.map(row => {
-        const transactionType = row.querySelector('.transactionType').value;
-        const accountPrefix = row.querySelector('.accountPrefix').value;
-        const accountCode = `${accountPrefix}${row.querySelector('.accountCode').value}`;
+        const accountCode = row.querySelector('.accountCode').value;
         const description = row.querySelector('.description').value || '';
         const debit = parseFloat(row.querySelector('.debit').value) || 0;
         const credit = parseFloat(row.querySelector('.credit').value) || 0;
 
-        if (!transactionType || !accountPrefix || !accountCode) {
+        if (!accountCode) {
           window.api.showMessage('Please fill in all required fields in each row.');
           throw new Error('Validation failed');
         }
@@ -329,7 +327,6 @@ window.addEventListener('DOMContentLoaded', () => {
         return {
           transaction_no: transactionNo,
           transaction_date: transactionDate,
-          account_type: transactionType,
           account_code: accountCode,
           description,
           debit,
@@ -362,36 +359,26 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
    // Add a new row to the transactions table
-   addRowBtn.addEventListener('click', () => {
-    const newRow = `
-      <tr>
-        <td>
-          <select class="transactionType" required>
-            <option value="">Select Type</option>
-            <option value="asset">Asset</option>
-            <option value="liabilities">Liabilities</option>
-            <option value="expense">Expense</option>
-            <option value="equity">Equity</option>
-            <option value="profit">Profit</option>
-            <option value="sales">Sales</option>
-            <option value="debtors">Debtors</option>
-            <option value="creditors">Creditors</option>
-          </select>
-        </td>
-        <td>
-          <select class="accountPrefix" required>
-            <option value="">Select Prefix</option>
-          </select>
-        </td>
-        <td><input type="text" class="accountCode" required placeholder="Code"></td>
-        <td><input type="text" class="description" placeholder="Description"></td>
-        <td><input type="number" class="debit" step="0.01" placeholder="Debit"></td>
-        <td><input type="number" class="credit" step="0.01" placeholder="Credit"></td>
-        <td><button class="remove-row-btn">Remove</button></td>
-      </tr>
+   async function addTransactionRow() {
+    const accountCodes = await fetchAccountCodes(currentCompanyId);
+    
+    const newRow = document.createElement("tr");
+    newRow.innerHTML = `
+      <td>
+        <select class="accountCode" required>
+          <option value="">Select Account</option>
+          ${accountCodes.map(code => `<option value="${code}">${code}</option>`).join("")}
+        </select>
+      </td>
+      <td><input type="text" class="description" placeholder="Description"></td>
+      <td><input type="number" class="debit" step="0.01" placeholder="Debit"></td>
+      <td><input type="number" class="credit" step="0.01" placeholder="Credit"></td>
+      <td><button class="remove-row-btn">Remove</button></td>
     `;
-    document.getElementById('transactionRows').insertAdjacentHTML('beforeend', newRow);
-  });
+  
+    document.getElementById("transactionRows").appendChild(newRow);
+  }
+  addRowBtn.addEventListener('click', addTransactionRow);
 
   // Remove a row from the transactions table
   document.addEventListener('click', (event) => {
@@ -429,18 +416,16 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  document.addEventListener('keydown', (event) => {
-    if(event.ctrlKey && event.key.toLowerCase() === 'a') {
-      event.preventDefault();
-      addTransactionModal.style.display = 'block';
-      // addTransactionBtn.click();
+  async function fetchAccountCodes(companyId) {
+    try {
+      const accounts = await window.api.getAccounts(companyId);
+      return accounts.map(a => a.account_code);
+    } catch (error) {
+      console.error("Error fetching account codes:", error);
+      return [];
     }
+  }
 
-    if(event.ctrlKey && event.key.toLowerCase() === 'e'){
-      event.preventDefault();
-      editTransactionBtn.click();
-    }
-  });
   ////////////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////// edit transactions /////////////////////////////////////////////////////////
   // Open the Edit Transaction modal
