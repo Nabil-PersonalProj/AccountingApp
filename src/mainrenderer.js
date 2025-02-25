@@ -1,5 +1,3 @@
-
-
 // DOM elements
 const companyList = document.getElementById('companyList');
 const addCompanyBtn = document.getElementById('addCompanyBtn');
@@ -15,7 +13,9 @@ const confirmDeleteCompanyBtn = document.getElementById('confirmDeleteCompanyBtn
 const cancelDeleteCompanyBtn = document.getElementById('cancelDeleteCompanyBtn');
 
 // Load list of companies
-window.addEventListener('DOMContentLoaded', loadCompanies);
+window.addEventListener('DOMContentLoaded', () => {
+  loadCompanies();
+});
 
 async function loadCompanies() {
   try {
@@ -114,3 +114,45 @@ confirmDeleteCompanyBtn.addEventListener('click', async () => {
 cancelDeleteCompanyBtn.addEventListener('click', () => {
   deleteCompanyModal.style.display = 'none';
 });
+
+// movable modal
+function makeModalDraggable(modal, header) {
+  let isDragging = false;
+  let offsetX, offsetY;
+
+  header.addEventListener("mousedown", (event) => {
+    isDragging = true;
+    offsetX = event.clientX - modal.offsetLeft;
+    offsetY = event.clientY - modal.offsetTop;
+    modal.style.position = "absolute";
+    modal.style.zIndex = "1001"; // Ensure modal is above other elements
+  });
+
+  document.addEventListener("mousemove", (event) => {
+    if (isDragging) {
+      modal.style.left = event.clientX - offsetX + "px";
+      modal.style.top = event.clientY - offsetY + "px";
+    }
+  });
+
+  document.addEventListener("mouseup", () => {
+    isDragging = false;
+  });
+}
+
+// Apply draggable functionality after the DOM has loaded
+window.addEventListener("DOMContentLoaded", () => {
+  const modals = [
+    { modal: "addCompanyModal", header: "addCompanyModalHeader" },
+    { modal: "deleteCompanyModal", header: "deleteCompanyModalHeader" }
+  ];
+
+  modals.forEach(({ modal, header }) => {
+    const modalElement = document.getElementById(modal);
+    const headerElement = document.getElementById(header);
+    if (modalElement && headerElement) {
+      makeModalDraggable(modalElement, headerElement);
+    }
+  });
+});
+

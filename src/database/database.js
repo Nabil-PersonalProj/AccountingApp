@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const { resolve } = require('dns');
 const { rejects } = require('assert');
+const { type } = require('os');
 
 // Ensure the `database/` folder exists
 const databaseFolder = path.join(__dirname, 'company_database');
@@ -397,6 +398,24 @@ async function getAccounts(companyId) {
   });
 }
 
+function addAccount(companyId, accountCode, accountName, accountType) {
+  return new Promise(async (resolve, reject) => {
+    try{
+      const {accountsDbPath} = await getCompanyDbPath(companyId);
+      const db = new sqlite3.Database(accountsDbPath);
+
+      db.run(`INSERT INTO accounts (account_code, account_name, account_type) VALUES (?,?,?)`,
+        [accountCode,accountName,accountType], (err) => {
+          db.close();
+          if (err) return reject(err);
+          resolve({ success: true, message: 'Account added successfully'});
+        });
+    } catch (error) {
+      reject(error);
+    }
+  });
+} 
+
 module.exports = {
   addCompany,
   getCompanies,
@@ -408,4 +427,5 @@ module.exports = {
   updateTransactions,
   deleteTransactions,
   deleteCompany,
+  addAccount,
 };

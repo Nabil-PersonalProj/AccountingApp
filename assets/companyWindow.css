@@ -230,3 +230,9 @@ tr:hover {
     font-size: 12px; /* Reduce font size for smaller screens */
   }
 }
+
+.account-group {
+  background-color: #f4f4f4;
+  font-weight: bold;
+  text-align: left;
+}

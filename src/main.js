@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain, dialog, Menu } = require('electron');
 const path = require('path');
-const { addCompany, getCompanies, getTransactions, getAccounts, searchTransaction, addTransaction, updateTransactions, deleteTransactions, getLastTransaction, deleteCompany } = require('./database/database');
+const { addCompany, getCompanies, getTransactions, getAccounts, searchTransaction, addTransaction, updateTransactions, deleteTransactions, getLastTransaction, deleteCompany, addAccount } = require('./database/database');
 
 const isMac = process.platform == 'darwin';
 const isDev = process.env.NODE_ENV != 'development';
@@ -184,6 +184,16 @@ ipcMain.handle('delete-company', async (event, companyId) => {
   }
 })
 
+ipcMain.handle('add-account', async (event, companyId, accountCode, accountName, accountType) => {
+  try {
+    console.log('accountCode:',accountCode)
+    return await addAccount(companyId, accountCode, accountName, accountType);
+  } catch (error) {
+    console.error('Error adding account: ', error);
+    return { success: false, message: error.message};
+  }
+})
+
 function getActiveCompanyWindow() {
   return BrowserWindow.getFocusedWindow(); // Returns the currently focused window
 }
@@ -195,23 +205,9 @@ const menuTemplate = [
     submenu: [
       {
         label: 'New Company',
-        accelerator: 'Ctrl+L',
-        click: () => {
-          const mainWindow = getActiveCompanyWindow();
-          if (mainWindow) {
-            mainWindow.webContents.send('open-new-company-modal');
-          }
-        }
       },
       {
         label: 'Open',
-        accelerator: 'Ctrl+O',
-        click: () => {
-          const mainWindow = getActiveCompanyWindow();
-          if (mainWindow) {
-            mainWindow.webContents.send('open-existing-company');
-          }
-        }
       },
       { type: 'separator' },
       { role: 'quit' } // Standard quit function
@@ -265,6 +261,15 @@ const menuTemplate = [
           const companyWindow = getActiveCompanyWindow();
           if (companyWindow) {
             companyWindow.webContents.send('open-edit-transaction');
+          }
+        }
+      },
+      {
+        label: 'Add Account',
+        click: () => {
+          const companyWindow = getActiveCompanyWindow();
+          if (companyWindow) {
+            companyWindow.webContents.send('open-add-account')
           }
         }
       }

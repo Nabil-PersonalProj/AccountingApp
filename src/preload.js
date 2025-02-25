@@ -20,4 +20,6 @@ contextBridge.exposeInMainWorld('api', {
     onOpenAddTransaction: (callback) => ipcRenderer.on('open-add-transaction', callback),
     onOpenEditTransaction: (callback) => ipcRenderer.on('open-edit-transaction', callback),
     deleteCompany: (companyId) => ipcRenderer.invoke('delete-company', companyId),
+    addAccount: (companyId, accountCode, accountName, accountType) => ipcRenderer.invoke('add-account', companyId,accountCode,accountName,accountType),
+    onOpenAddAccount: (callback) => ipcRenderer.on('open-add-account', callback),
 });

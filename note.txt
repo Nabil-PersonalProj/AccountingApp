@@ -1,6 +1,7 @@
 init : 50 hrs (before edit)
 edit function: 18 hrs
 task 2.1: 6 hrs
+task 2.2: 9 hrs
 
 total:
 
@@ -33,14 +34,17 @@ Company pages
 
 
 types of account (cannot be unique)
-1.assets : [ca,cb,fa,pd]
-2.liabilities : [cl]
-3.expenses : [ex]
-4.equity : [sc]
-5.profit : [pl]
-6.sales : [sa]
-7.debtors : [td]
-8.creditors : [tc]
+1.assets 
+2.liabilities 
+3.expenses 
+4.equity 
+5.profit & loss
+6.sales
+7.cost of sales
+8.debtors 
+9.creditors 
+11.fixed assets
+12.accumulated depreciation
 
 
 future functions:
@@ -61,13 +65,19 @@ All transactions to groupby transaction no.(done)
 
 task 2.2:
  tools (on hold)
- file import csv (on hold)
+ file import/export csv (on hold)
  all accounts need to show total (important) (done)
  put final balance at the bottom (on hold)
- Account code search bar during add transaction and edit transaction
- new table to keep track of all account code (important) (3hr)  (done)
- delete Company (done) (1hr)
- reconfigure the logic for add and edit (add done 3hrs)
- 
+ Account code search bar during add transaction and edit transaction (done)
+ new table to keep track of all account code (important) (done)
+ delete Company (done)
+ reconfigure the logic for add and edit (done)
+ arrange all account by account type (done)
+ add accounts function  (done)
 
 
+task 2.3:
+  Add delete rename (manage account page)
+  editing on table itself / separate window
+  put final balance at the bottom for both all account/ all transactions
+  generate profit and loss report/account

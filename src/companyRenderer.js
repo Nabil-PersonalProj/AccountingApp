@@ -134,17 +134,32 @@ window.addEventListener('DOMContentLoaded', () => {
         accountsBody.innerHTML = '<tr><td colspan="5">No accounts available.</td></tr>';
         return;
       }
+
+      const groupedAccounts = {};
+      accounts.forEach(account => {
+        if (!groupedAccounts[account.account_type]) {
+            groupedAccounts[account.account_type] = [];
+        }
+        groupedAccounts[account.account_type].push(account);
+      });
   
-      // Populate accounts table
-      accountsBody.innerHTML = accounts.map(a => `
-        <tr>
-          <td>${a.account_code}</td>
-          <td>${a.account_name}</td>
-          <td>${a.account_type}</td>
-          <td>${a.total_debit.toFixed(2)}</td>
-          <td>${a.total_credit.toFixed(2)}</td>
-        </tr>
-      `).join('');
+      let tableContent = '';
+      Object.keys(groupedAccounts).forEach(type => {
+          tableContent += `<tr class="account-group"><td colspan="5"><strong>${type}</strong></td></tr>`;
+          groupedAccounts[type].forEach(a => {
+              tableContent += `
+                  <tr>
+                      <td><span class="clickable account-code" data-account="${a.account_code}">${a.account_code}</span></td>
+                      <td>${a.account_name}</td>
+                      <td>${a.account_type}</td>
+                      <td>${a.total_debit.toFixed(2)}</td>
+                      <td>${a.total_credit.toFixed(2)}</td>
+                  </tr>
+              `;
+          });
+      });
+
+      accountsBody.innerHTML = tableContent;
     } catch (error) {
       console.error('Error loading accounts:', error);
     }
@@ -592,6 +607,81 @@ window.addEventListener('DOMContentLoaded', () => {
     editTransactionModal.style.display = 'none';
     refresh(currentCompanyId)
   });
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////// Accounts /////////////////////////////////////////////////////////
+  window.api.onOpenAddAccount(() => {
+    document.getElementById('addAccountModal').style.display = 'block';
+    loadAccounts();
+  })
+
+  document.getElementById('cancelAccountBtn').addEventListener('click', ()=> {
+    document.getElementById('addAccountModal').style.display = 'none';
+    refresh(currentCompanyId)
+  })
+
+  document.getElementById('saveAccountBtn').addEventListener('click', async () => {
+    const accountCode = document.getElementById('accountCode').value.trim();
+    const accountName = document.getElementById('accountName').value.trim();
+    const accountType = document.getElementById('accountType').value.trim();
+
+    if (!accountCode || !accountName || !accountType) {
+      window.api.showMessage("All fields are required");
+      return;
+    }
+
+    try {
+      const response = await window.api.addAccount(currentCompanyId, accountCode, accountName, accountType);
+      if (!response.success) {
+        window.api.showMessage(response.message)
+        return;
+      }
+      document.getElementById('addAccountModal').style.display = 'none'
+      loadAccounts();
+    } catch (error) {
+      window.api.showMessage('Error adding account:', error);
+    }
+    refresh(currentCompanyId)
+  });
+
+  async function loadAccounts() {
+    try {
+      const accounts = await window.api.getAccounts(currentCompanyId);
+      const accountsList = document.getElementById('accounts-list');
+
+      if (!accounts || accounts.length === 0) {
+          accountsList.innerHTML = '<tr><td colspan="3">No accounts available.</td></tr>';
+          return;
+      }
+
+      // Group accounts by type
+      const groupedAccounts = {};
+      accounts.forEach(account => {
+          if (!groupedAccounts[account.account_type]) {
+              groupedAccounts[account.account_type] = [];
+          }
+          groupedAccounts[account.account_type].push(account);
+      });
+
+      let tableContent = '';
+      Object.keys(groupedAccounts).forEach(type => {
+          tableContent += `<tr class="account-group"><td colspan="3"><strong>${type}</strong></td></tr>`;
+          groupedAccounts[type].forEach(a => {
+              tableContent += `
+                  <tr>
+                      <td>${a.account_code}</td>
+                      <td>${a.account_name}</td>
+                  </tr>
+              `;
+          });
+      });
+
+      accountsList.innerHTML = tableContent;
+
+      } catch (error) {
+        show.api.showMessage('Error loading accounts: ', error);
+      }
+  }
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////// key binds /////////////////////////////////////////////////////////
