@@ -81,3 +81,4 @@ task 2.3:
   editing on table itself / separate window
   put final balance at the bottom for both all account/ all transactions
   generate profit and loss report/account
+  file import/export csv
