@@ -65,9 +65,9 @@ All transactions to groupby transaction no.(done)
 
 task 2.2:
  tools (on hold)
- file import/export csv (on hold)
+ file import/export csv (on hold) brought to 2.3
  all accounts need to show total (important) (done)
- put final balance at the bottom (on hold)
+ put final balance at the bottom (on hold) brought to 2.3
  Account code search bar during add transaction and edit transaction (done)
  new table to keep track of all account code (important) (done)
  delete Company (done)
@@ -77,8 +77,8 @@ task 2.2:
 
 
 task 2.3:
-  Add delete rename (manage account page)
+  Add delete rename (manage account page) (done) 1hr
   editing on table itself / separate window
-  put final balance at the bottom for both all account/ all transactions
+  put final balance at the bottom for both all account/ all transactions + (correcting account page all final to one side) (done) 1hr
   generate profit and loss report/account
-  file import/export csv
+  file import/export csv (on hold)

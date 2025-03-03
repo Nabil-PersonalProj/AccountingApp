@@ -147,8 +147,9 @@
         </tbody>
         <tfoot>
           <tr>
-            <td colspan="3" style="text-align: right;"><strong>Final Balance:</strong></td>
-            <td id="final-account-debit"></td>
+            <td colspan="4" style="text-align: right;"><strong>Final Balance:</strong></td>
+            <td id="final-debit">0.00</td>
+            <td id="final-credit">0.00</td>
           </tr>
         </tfoot>
       </table>
@@ -176,41 +177,45 @@
             <td>0</td>
           </tr>
         </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3" style="text-align: right;"><strong>Final Balance:</strong></td>
+            <td id="final-account-debit">0.00</td>
+            <td id="final-account-credit">0.00</td>
+          </tr>
+        </tfoot>
       </table>
     </section>
   </div>
 
-  <!-- Add Accounts modal -->
-  <div id="addAccountModal" class="modal" style="display: none;">
+  <!-- Account Manager Modal -->
+  <div id="accountManagerModal" class="modal" style="display: none;">
     <div class="modal-content">
-        <h2>Add New Account</h2>
-        <div class="form-group">
-            <label for="accountCode"><strong>Account Code:</strong></label>
-            <input type="text" id="accountCode" placeholder="Enter account code" required>
-        </div>
-        <div class="form-group">
-            <label for="accountName"><strong>Account Name:</strong></label>
-            <input type="text" id="accountName" placeholder="Enter account name" required>
-        </div>
-        <div class="form-group">
-            <label for="accountType"><strong>Account Type:</strong></label>
-            <input type="text" id="accountType" placeholder="Enter account type (e.g., Assets, Liabilities)">
-        </div>
-        <button id="saveAccountBtn" class="add-button">Save</button>
-        <button id="cancelAccountBtn" class="filter-button">Cancel</button>
+        <h2>Account Manager</h2>
 
-        <h3>Existing Accounts</h3>
+        <!-- Table for managing accounts -->
         <table class="accounts-table">
             <thead>
                 <tr>
                     <th>Account Code</th>
                     <th>Account Name</th>
+                    <th>Account Type</th>
+                    <th>Action</th>
                 </tr>
             </thead>
-            <tbody id="accounts-list">
-                <!-- Grouped accounts will be dynamically inserted here -->
+            <tbody id="accountManagerBody">
+                <!-- Dynamically filled -->
             </tbody>
         </table>
+
+         <!-- Add Row Button -->
+         <button id="addAccountRowBtn" class="add-button">Add Row</button>
+
+        <!-- Action Buttons -->
+        <div class="form-actions">
+            <button id="saveAccountChangesBtn" class="add-button">Save Changes</button>
+            <button id="cancelAccountChangesBtn" class="filter-button">Cancel</button>
+        </div>
     </div>
   </div>
 

@@ -22,4 +22,6 @@ contextBridge.exposeInMainWorld('api', {
     deleteCompany: (companyId) => ipcRenderer.invoke('delete-company', companyId),
     addAccount: (companyId, accountCode, accountName, accountType) => ipcRenderer.invoke('add-account', companyId,accountCode,accountName,accountType),
     onOpenAddAccount: (callback) => ipcRenderer.on('open-add-account', callback),
+    updateAccounts: (companyId, accounts) => ipcRenderer.invoke('update-accounts', companyId, accounts),
+    deleteAccount: (companyId, accountCode) => ipcRenderer.invoke('delete-account', companyId, accountCode),
 });

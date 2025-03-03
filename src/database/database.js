@@ -130,7 +130,6 @@ async function deleteCompany(companyId) {
 
 
 ////////////////////////////////////////// Companydb ////////////////////////////////////////////////////////
-
 // Initialize a company's database with the `transactions` table
 function initializeTransactionDatabase(dbPath) {
   return new Promise((resolve, reject) => {
@@ -374,12 +373,16 @@ async function getAccounts(companyId) {
               WHERE account_code = ?`;
             
             transactionsDb.get(query, [account.account_code], (err, row) => {
-            if (err) {
-                console.error(`Error fetching totals for ${account.account_code}:`, err);
-                resolveAccount({ ...account, total_debit: 0, total_credit: 0 }); // Default values on error
-              } else {
-                resolveAccount({ ...account, total_debit: row.total_debit, total_credit: row.total_credit });
-              }
+              const totalCredit = row?.total_credit ?? 0;
+              const totalDebit = row?.total_debit ?? 0;
+              const balance = totalCredit - totalDebit;
+
+              
+              resolveAccount({
+                ...account,
+                debit: balance < 0 ? (-balance).toFixed(2) : "0.00",
+                credit: balance > 0 ? (balance).toFixed(2) : "0.00",
+              });
             });
           });
         });
@@ -414,7 +417,48 @@ function addAccount(companyId, accountCode, accountName, accountType) {
       reject(error);
     }
   });
-} 
+}
+
+// Update Multiple Accounts
+function updateAccounts(companyId, accounts) {
+  return new Promise(async (resolve, reject) => {
+      try {
+          const { accountsDbPath } = await getCompanyDbPath(companyId);
+          const db = new sqlite3.Database(accountsDbPath);
+          db.serialize(() => {
+              db.run('BEGIN TRANSACTION;');
+              const query = `UPDATE accounts SET account_name = ?, account_type = ? WHERE account_code = ?`;
+              accounts.forEach(account => {
+                  db.run(query, [account.account_name, account.account_type, account.account_code]);
+              });
+              db.run('COMMIT;', function (err) {
+                  db.close();
+                  if (err) return reject(err);
+                  resolve(true);
+              });
+          });
+      } catch (error) {
+          reject(error);
+      }
+  });
+}
+
+// Delete an Account
+function deleteAccount(companyId, accountCode) {
+  return new Promise(async (resolve, reject) => {
+      try {
+          const { accountsDbPath } = await getCompanyDbPath(companyId);
+          const db = new sqlite3.Database(accountsDbPath);
+          db.run(`DELETE FROM accounts WHERE account_code = ?`, [accountCode], (err) => {
+              db.close();
+              if (err) return reject(err);
+              resolve(true);
+          });
+      } catch (error) {
+          reject(error);
+      }
+  });
+}
 
 module.exports = {
   addCompany,
@@ -428,4 +472,6 @@ module.exports = {
   deleteTransactions,
   deleteCompany,
   addAccount,
+  deleteAccount,
+  updateAccounts,
 };

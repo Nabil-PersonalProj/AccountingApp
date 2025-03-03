@@ -95,6 +95,8 @@ window.addEventListener('DOMContentLoaded', () => {
       return acc;
     }, {});
 
+    let totalDebit = 0;
+    let totalCredit = 0;
     let tableContent = '';
 
     Object.keys(groupedTransactions).forEach(transactionNo => {
@@ -105,6 +107,9 @@ window.addEventListener('DOMContentLoaded', () => {
       `;
 
       groupedTransactions[transactionNo].forEach(t => {
+        totalCredit += parseFloat(t.credit) || 0;
+        totalDebit += parseFloat(t.debit) || 0;
+
         tableContent += `
             <tr>
               <td><span class="clickable date" data-date="${t.date}">${t.date}</span></td>
@@ -119,6 +124,8 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     transactionsBody.innerHTML = tableContent;
+    document.getElementById('final-debit').textContent = totalDebit.toFixed(2);
+    document.getElementById('final-credit').textContent = totalCredit.toFixed(2);
   }
 
   // Load accounts data into the All Accounts tab
@@ -144,22 +151,33 @@ window.addEventListener('DOMContentLoaded', () => {
       });
   
       let tableContent = '';
+      let totalAccountDebit = 0;
+      let totalAccountCredit = 0;
+
       Object.keys(groupedAccounts).forEach(type => {
           tableContent += `<tr class="account-group"><td colspan="5"><strong>${type}</strong></td></tr>`;
           groupedAccounts[type].forEach(a => {
+              totalAccountCredit += parseFloat(a.credit) || 0;
+              totalAccountDebit += parseFloat(a.debit) || 0;
+
+              const debitValue = a.debit !== undefined ? a.debit : "0.00";
+              const creditValue = a.credit !== undefined ? a.credit : "0.00";
+
               tableContent += `
                   <tr>
                       <td><span class="clickable account-code" data-account="${a.account_code}">${a.account_code}</span></td>
                       <td>${a.account_name}</td>
                       <td>${a.account_type}</td>
-                      <td>${a.total_debit.toFixed(2)}</td>
-                      <td>${a.total_credit.toFixed(2)}</td>
+                      <td>${parseFloat(debitValue).toFixed(2)}</td>
+                      <td>${parseFloat(creditValue).toFixed(2)}</td>
                   </tr>
               `;
           });
       });
 
       accountsBody.innerHTML = tableContent;
+      document.getElementById('final-account-debit').textContent = totalAccountDebit.toFixed(2);
+      document.getElementById('final-account-credit').textContent = totalAccountCredit.toFixed(2);
     } catch (error) {
       console.error('Error loading accounts:', error);
     }
@@ -377,7 +395,7 @@ window.addEventListener('DOMContentLoaded', () => {
       <td><input type="text" class="description" placeholder="Description"></td>
       <td><input type="number" class="debit" step="0.01" placeholder="Debit"></td>
       <td><input type="number" class="credit" step="0.01" placeholder="Credit"></td>
-      <td><button class="remove-row-btn">Remove</button></td>
+      <td><button class="remove-row-btn">🗑️</button></td>
     `;
   
     document.getElementById("transactionRows").appendChild(newRow);
@@ -506,7 +524,7 @@ window.addEventListener('DOMContentLoaded', () => {
           <td><input type="text" class="description" value="${t.description || ''}"></td>
           <td><input type="number" class="debit" step="0.01" value="${t.debit || 0}" required></td>
           <td><input type="number" class="credit" step="0.01" value="${t.credit || 0}" required></td>
-          <td><button class="remove-edit-row-btn">Remove</button></td>
+          <td><button class="remove-edit-row-btn">🗑️</button></td>
         </tr>
         `;
     }).join('');
@@ -611,77 +629,133 @@ window.addEventListener('DOMContentLoaded', () => {
   ////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////// Accounts /////////////////////////////////////////////////////////
   window.api.onOpenAddAccount(() => {
-    document.getElementById('addAccountModal').style.display = 'block';
-    loadAccounts();
+    document.getElementById('accountManagerModal').style.display = 'block';
+    loadAccountManager();
   })
 
-  document.getElementById('cancelAccountBtn').addEventListener('click', ()=> {
-    document.getElementById('addAccountModal').style.display = 'none';
+  document.getElementById('cancelAccountChangesBtn').addEventListener('click', ()=> {
+    document.getElementById('accountManagerModal').style.display = 'none';
     refresh(currentCompanyId)
   })
 
-  document.getElementById('saveAccountBtn').addEventListener('click', async () => {
-    const accountCode = document.getElementById('accountCode').value.trim();
-    const accountName = document.getElementById('accountName').value.trim();
-    const accountType = document.getElementById('accountType').value.trim();
+  document.getElementById('saveAccountChangesBtn').addEventListener('click', async () => {
+    const rows = document.querySelectorAll('#accountManagerBody tr');
+    const modifiedAccounts = [];
+    const newAccounts = [];
+    const deletedAccounts = [...window.originalAccounts];
 
-    if (!accountCode || !accountName || !accountType) {
-      window.api.showMessage("All fields are required");
+    const allAccountCodes = new Set();
+    let hasDuplicates = false;
+
+    rows.forEach(row => {
+        const accountCodeInput = row.querySelector('.account-code');
+        const accountCode = accountCodeInput ? accountCodeInput.value.trim() : row.dataset.accountId;
+        const accountName = row.querySelector('.account-name').value.trim();
+        const accountType = row.querySelector('.account-type').value.trim();
+
+        // Check if account code already exists
+        if (allAccountCodes.has(accountCode)) {
+          hasDuplicates = true;
+          //accountCodeInput.style.border = "2px solid red"; // Highlight the duplicate field
+        } else {
+          allAccountCodes.add(accountCode);
+          //accountCodeInput.style.border = ""; // Remove highlight if valid
+        }
+      
+        if (!accountCode || !accountName || !accountType) {
+          window.api.showMessage("All fields are required!");
+          return;
+        }
+    
+        if (row.classList.contains('new-account-row')) {
+            newAccounts.push({ account_code: accountCode, account_name: accountName, account_type: accountType });
+        } else {
+            const original = window.originalAccounts.find(a => a.account_code === accountCode);
+            if (original) {
+                deletedAccounts.splice(deletedAccounts.indexOf(original), 1);
+                if (original.account_name !== accountName || original.account_type !== accountType) {
+                    modifiedAccounts.push({ account_code: accountCode, account_name: accountName, account_type: accountType });
+                }
+            }
+        }
+    });
+
+    if (hasDuplicates) {
+      window.api.showMessage("Duplicate account codes detected. Please ensure each account code is unique.");
       return;
     }
 
     try {
-      const response = await window.api.addAccount(currentCompanyId, accountCode, accountName, accountType);
-      if (!response.success) {
-        window.api.showMessage(response.message)
-        return;
-      }
-      document.getElementById('addAccountModal').style.display = 'none'
-      loadAccounts();
+        if (newAccounts.length > 0) {
+            const addPromises = newAccounts.map(acc => window.api.addAccount(currentCompanyId, acc.account_code, acc.account_name, acc.account_type));
+            await Promise.all(addPromises);
+        }
+        if (modifiedAccounts.length > 0) {
+            await window.api.updateAccounts(currentCompanyId, modifiedAccounts);
+        }
+        if (deletedAccounts.length > 0) {
+            const deletePromises = deletedAccounts.map(acc => window.api.deleteAccount(currentCompanyId, acc.account_code));
+            await Promise.all(deletePromises);
+        }
+
+        window.api.showMessage('Account changes saved successfully!');
+        document.getElementById('accountManagerModal').style.display = 'none';
+        refresh(currentCompanyId);
     } catch (error) {
-      window.api.showMessage('Error adding account:', error);
+        console.error('Error saving account changes:', error);
     }
     refresh(currentCompanyId)
   });
 
-  async function loadAccounts() {
-    try {
+  document.addEventListener('click', (event) => {
+    if(event.target.classList.contains('delete-account-btn')) {
+      const row = event.target.closest('tr');
+      row.remove();
+    }
+  })
+
+  // Add a new row for adding an account
+  document.getElementById('addAccountRowBtn').addEventListener('click', () => {
+    const accountBody = document.getElementById('accountManagerBody');
+
+    const newRow = document.createElement('tr');
+    newRow.classList.add('new-account-row'); // Tag new rows
+    newRow.innerHTML = `
+        <td><input type="text" class="account-code" placeholder="Enter code"></td>
+        <td><input type="text" class="account-name" placeholder="Enter name"></td>
+        <td><input type="text" class="account-type" placeholder="Enter type"></td>
+        <td><button class="delete-account-btn">🗑️</button></td>
+    `;
+
+    accountBody.appendChild(newRow);
+  });
+
+  // Load Accounts into Editable Table
+async function loadAccountManager() {
+  try {
       const accounts = await window.api.getAccounts(currentCompanyId);
-      const accountsList = document.getElementById('accounts-list');
+      const accountBody = document.getElementById('accountManagerBody');
+
+      // Store Original Accounts for Snapshot
+      window.originalAccounts = JSON.parse(JSON.stringify(accounts));
 
       if (!accounts || accounts.length === 0) {
-          accountsList.innerHTML = '<tr><td colspan="3">No accounts available.</td></tr>';
+          accountBody.innerHTML = '<tr><td colspan="4">No accounts available.</td></tr>';
           return;
       }
 
-      // Group accounts by type
-      const groupedAccounts = {};
-      accounts.forEach(account => {
-          if (!groupedAccounts[account.account_type]) {
-              groupedAccounts[account.account_type] = [];
-          }
-          groupedAccounts[account.account_type].push(account);
-      });
-
-      let tableContent = '';
-      Object.keys(groupedAccounts).forEach(type => {
-          tableContent += `<tr class="account-group"><td colspan="3"><strong>${type}</strong></td></tr>`;
-          groupedAccounts[type].forEach(a => {
-              tableContent += `
-                  <tr>
-                      <td>${a.account_code}</td>
-                      <td>${a.account_name}</td>
-                  </tr>
-              `;
-          });
-      });
-
-      accountsList.innerHTML = tableContent;
-
-      } catch (error) {
-        show.api.showMessage('Error loading accounts: ', error);
-      }
+      accountBody.innerHTML = accounts.map(a => `
+          <tr data-account-id="${a.account_code}">
+              <td>${a.account_code}</td>
+              <td><input type="text" class="account-name" value="${a.account_name}"></td>
+              <td><input type="text" class="account-type" value="${a.account_type}"></td>
+              <td><button class="delete-account-btn">🗑️</button></td>
+          </tr>
+      `).join('');
+  } catch (error) {
+      console.error('Error loading accounts:', error);
   }
+}
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////// key binds /////////////////////////////////////////////////////////

@@ -1,6 +1,10 @@
 const { app, BrowserWindow, ipcMain, dialog, Menu } = require('electron');
 const path = require('path');
-const { addCompany, getCompanies, getTransactions, getAccounts, searchTransaction, addTransaction, updateTransactions, deleteTransactions, getLastTransaction, deleteCompany, addAccount } = require('./database/database');
+const { addCompany, getCompanies, deleteCompany,
+  getTransactions, getAccounts, searchTransaction, 
+  addTransaction, updateTransactions, deleteTransactions, getLastTransaction, 
+  addAccount, deleteAccount, updateAccounts,
+ } = require('./database/database');
 
 const isMac = process.platform == 'darwin';
 const isDev = process.env.NODE_ENV != 'development';
@@ -198,6 +202,24 @@ function getActiveCompanyWindow() {
   return BrowserWindow.getFocusedWindow(); // Returns the currently focused window
 }
 
+ipcMain.handle('update-accounts', async (event, companyId, accounts) => {
+  try {
+      return await updateAccounts(companyId, accounts);
+  } catch (error) {
+      console.error('Error updating accounts:', error);
+      throw error;
+  }
+});
+
+ipcMain.handle('delete-account', async (event, companyId, accountCode) => {
+  try {
+      return await deleteAccount(companyId, accountCode);
+  } catch (error) {
+      console.error('Error deleting account:', error);
+      throw error;
+  }
+});
+
 // Menu
 const menuTemplate = [
   {
@@ -265,7 +287,7 @@ const menuTemplate = [
         }
       },
       {
-        label: 'Add Account',
+        label: 'Account Manager',
         click: () => {
           const companyWindow = getActiveCompanyWindow();
           if (companyWindow) {
