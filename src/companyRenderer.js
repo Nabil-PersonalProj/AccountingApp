@@ -595,7 +595,7 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     });
   
-    if (modifiedTransactions.length === 0 && addedTransactions.length === 0 && deletedTransactions.length === 0) {
+    if (JSON.stringify(originalTransactionSnapshot) === JSON.stringify(updatedTransactions)) {
       window.api.showMessage('No changes detected.');
       return;
     }
@@ -723,39 +723,57 @@ window.addEventListener('DOMContentLoaded', () => {
     newRow.innerHTML = `
         <td><input type="text" class="account-code" placeholder="Enter code"></td>
         <td><input type="text" class="account-name" placeholder="Enter name"></td>
-        <td><input type="text" class="account-type" placeholder="Enter type"></td>
+        <td>
+          <select class="account-type">
+            ${generateAccountType("")}
+          </select>
+        </td>
         <td><button class="delete-account-btn">🗑️</button></td>
     `;
 
     accountBody.appendChild(newRow);
   });
 
-  // Load Accounts into Editable Table
-async function loadAccountManager() {
-  try {
-      const accounts = await window.api.getAccounts(currentCompanyId);
-      const accountBody = document.getElementById('accountManagerBody');
+  function generateAccountType(selectedType) {
+    const accountTypes = ["Asset", "Liabilities", "Expense", "Equity", "Profit & Loss",
+      "Sales", "Cost of Sale", "Debtor", "Creditor", "Fixed Asset", "Accumulated Depreciation"
+    ]
 
-      // Store Original Accounts for Snapshot
-      window.originalAccounts = JSON.parse(JSON.stringify(accounts));
-
-      if (!accounts || accounts.length === 0) {
-          accountBody.innerHTML = '<tr><td colspan="4">No accounts available.</td></tr>';
-          return;
-      }
-
-      accountBody.innerHTML = accounts.map(a => `
-          <tr data-account-id="${a.account_code}">
-              <td>${a.account_code}</td>
-              <td><input type="text" class="account-name" value="${a.account_name}"></td>
-              <td><input type="text" class="account-type" value="${a.account_type}"></td>
-              <td><button class="delete-account-btn">🗑️</button></td>
-          </tr>
-      `).join('');
-  } catch (error) {
-      console.error('Error loading accounts:', error);
+    return accountTypes.map(type => 
+      `<option value="${type}" ${type === selectedType ? "selected" : ""}>${type}</option>`
+    ).join('');
   }
-}
+
+  // Load Accounts into Editable Table
+  async function loadAccountManager() {
+    try {
+        const accounts = await window.api.getAccounts(currentCompanyId);
+        const accountBody = document.getElementById('accountManagerBody');
+
+        // Store Original Accounts for Snapshot
+        window.originalAccounts = JSON.parse(JSON.stringify(accounts));
+
+        if (!accounts || accounts.length === 0) {
+            accountBody.innerHTML = '<tr><td colspan="4">No accounts available.</td></tr>';
+            return;
+        }
+
+        accountBody.innerHTML = accounts.map(a => `
+            <tr data-account-id="${a.account_code}">
+                <td>${a.account_code}</td>
+                <td><input type="text" class="account-name" value="${a.account_name}"></td>
+                <td>
+                  <select class="account-type">
+                    ${generateAccountType(a.accountType)}
+                  </select>
+                </td>
+                <td><button class="delete-account-btn">🗑️</button></td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading accounts:', error);
+    }
+  }
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////// key binds /////////////////////////////////////////////////////////
@@ -779,5 +797,15 @@ async function loadAccountManager() {
   window.api.onOpenEditTransaction(() => {
     console.log('Menu: Open Edit Transaction Modal');
     editTransactionBtn.click();
+  });
+
+  window.api.receive('request-company-id', () => {
+    if (currentCompanyId) {
+      console.log("Sending company ID to main process:", currentCompanyId);
+      window.api.send('fetch-company-id', currentCompanyId);
+    } else {
+      console.error("No company ID found.");
+      window.api.showMessage("No active company selected.");
+    }
   });
 });
