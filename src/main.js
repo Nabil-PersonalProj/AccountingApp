@@ -4,6 +4,7 @@ const { addCompany, getCompanies, deleteCompany,
   getTransactions, getAccounts, searchTransaction, 
   addTransaction, updateTransactions, deleteTransactions, getLastTransaction, 
   addAccount, deleteAccount, updateAccounts,
+  getProfitLossReport,
  } = require('./database/database');
 
 const isMac = process.platform == 'darwin';
@@ -53,6 +54,26 @@ function createCompanyWindow(companyId) {
   });
 
   console.log('company window loaded. Id:', companyId);
+}
+
+function createProfitLossWindow(companyId) {
+  const profitLossWindow = new BrowserWindow({
+    width: 800,
+    height: 600,
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      preload: path.join(__dirname, 'preload.js'),
+    }
+  });
+
+  profitLossWindow.loadFile(path.join(__dirname, 'windows', 'profitLossWindow.html'));
+
+  profitLossWindow.webContents.on('did-finish-load', () => {
+    profitLossWindow.webContents.send('load-profit-loss', companyId);
+  });
+
+  console.log('Profit & Loss window opened for Company ID:', companyId);
 }
 
 // Register IPC Handlers
@@ -220,6 +241,12 @@ ipcMain.handle('delete-account', async (event, companyId, accountCode) => {
   }
 });
 
+
+// Handle IPC request to open Profit & Loss window
+ipcMain.on('fetch-company-id', (event, companyId) => {
+  createProfitLossWindow(companyId);
+});
+
 // Menu
 const menuTemplate = [
   {
@@ -253,7 +280,18 @@ const menuTemplate = [
       { role: 'reload' },
       { role: 'toggleDevTools' },
       { type: 'separator' },
-      { role: 'togglefullscreen' }
+      { role: 'togglefullscreen' },
+      {
+        label: 'Profit/Loss',
+        click: () => {
+          const focusedWindow = BrowserWindow.getFocusedWindow();
+          if (focusedWindow) {
+            focusedWindow.webContents.send('request-company-id');
+          } else {
+            console.error("No active window detected.");
+          }
+        }
+      },
     ]
   },
   {

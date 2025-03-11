@@ -1,4 +1,4 @@
-init : 50 hrs (before edit)
+init : 40 hrs (before edit)
 edit function: 18 hrs
 task 2.1: 6 hrs
 task 2.2: 9 hrs
@@ -34,17 +34,17 @@ Company pages
 
 
 types of account (cannot be unique)
-1.assets 
-2.liabilities 
-3.expenses 
-4.equity 
-5.profit & loss
-6.sales
-7.cost of sales
-8.debtors 
-9.creditors 
-11.fixed assets
-12.accumulated depreciation
+1.Asset 
+2.Liabilities 
+3.Expense 
+4.Equity 
+5.Profit & Loss
+6.Sales
+7.Cost of Sale
+8.Debtor
+9.Creditor
+11.Fixed Asset
+12.Accumulated Depreciation
 
 
 future functions:
@@ -80,5 +80,5 @@ task 2.3:
   Add delete rename (manage account page) (done) 1hr
   editing on table itself / separate window
   put final balance at the bottom for both all account/ all transactions + (correcting account page all final to one side) (done) 1hr
-  generate profit and loss report/account
+  generate profit and loss report/account (2hr)
   file import/export csv (on hold)

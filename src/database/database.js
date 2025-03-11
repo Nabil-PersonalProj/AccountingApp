@@ -460,6 +460,7 @@ function deleteAccount(companyId, accountCode) {
   });
 }
 
+
 module.exports = {
   addCompany,
   getCompanies,

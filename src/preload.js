@@ -24,4 +24,7 @@ contextBridge.exposeInMainWorld('api', {
     onOpenAddAccount: (callback) => ipcRenderer.on('open-add-account', callback),
     updateAccounts: (companyId, accounts) => ipcRenderer.invoke('update-accounts', companyId, accounts),
     deleteAccount: (companyId, accountCode) => ipcRenderer.invoke('delete-account', companyId, accountCode),
+    openProfitLoss: (companyId) => ipcRenderer.invoke('open-profit-loss', companyId),
+    receive: (channel, callback) => ipcRenderer.on(channel, (_, data) => callback(data)),
+    send: (channel, data) => ipcRenderer.send(channel, data),
 });

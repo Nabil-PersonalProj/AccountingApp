@@ -726,6 +726,7 @@ window.addEventListener('DOMContentLoaded', () => {
         <td>
           <select class="account-type">
             ${generateAccountType("")}
+            
           </select>
         </td>
         <td><button class="delete-account-btn">🗑️</button></td>
