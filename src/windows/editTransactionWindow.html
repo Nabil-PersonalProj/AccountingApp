@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Transaction</title>
+    <link rel="stylesheet" href="../../assets/companyWindow.css">
+</head>
+<body>
+    <div class="container">
+        <header class="app-header">
+            <h2>Edit Transaction</h2>
+        </header>
+
+        <p><strong>Editing Transaction No: <span id="editTransactionNo"></span></strong></p>
+        <label for="editTransactionDate"><strong>Transaction Date:</strong></label>
+        <input type="date" id="editTransactionDate" required>
+
+        <table class="transactions-table">
+            <thead>
+                <tr>
+                    <th>Account Code</th>
+                    <th>Description</th>
+                    <th>Debit</th>
+                    <th>Credit</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="editTransactionRows"></tbody>
+        </table>
+
+        <button id="addEditRowBtn" class="add-button">Add Row</button>
+
+        <div class="form-actions">
+            <p id="editBalanceWarning" style="color: red; font-weight: bold; display: none;"></p>
+            <button id="saveEditTransactionBtn" class="add-button">Save</button>
+            <button id="cancelEditTransactionBtn" class="filter-button">Cancel</button>
+        </div>
+    </div>
+
+    <script src="../editTransactionRenderer.js"></script>
+</body>
+</html>
