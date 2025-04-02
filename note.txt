@@ -85,4 +85,7 @@ task 2.3:
   file import/export csv (on hold)
 
 task 2.4:
-  
+  import/export
+    profit/loss (done)
+    transactions
+    trial balance

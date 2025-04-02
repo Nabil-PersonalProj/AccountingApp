@@ -5,6 +5,7 @@ const { addCompany, getCompanies, deleteCompany,
   addTransaction, updateTransactions, deleteTransactions, getLastTransaction, 
   addAccount, deleteAccount, updateAccounts,
  } = require('./database/database');
+ const fs = require('fs');
 
 const isMac = process.platform == 'darwin';
 const isDev = process.env.NODE_ENV != 'development';
