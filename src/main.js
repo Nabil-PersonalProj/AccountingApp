@@ -4,7 +4,6 @@ const { addCompany, getCompanies, deleteCompany,
   getTransactions, getAccounts, searchTransaction, 
   addTransaction, updateTransactions, deleteTransactions, getLastTransaction, 
   addAccount, deleteAccount, updateAccounts,
-  getProfitLossReport,
  } = require('./database/database');
 
 const isMac = process.platform == 'darwin';
@@ -32,7 +31,12 @@ function createMainWindow() {
 }
 
 // Create company window
+let companyWindows = {};
+
 function createCompanyWindow(companyId) {
+  if (!companyWindows[companyId]) {
+    companyWindows[companyId] = []; // Initialize array if not exists
+  }
 
   const companyWindow = new BrowserWindow({
     width: 1000,
@@ -47,6 +51,8 @@ function createCompanyWindow(companyId) {
   companyWindow.maximize();
 
   companyWindow.loadFile(path.join(__dirname, 'windows', 'companyWindow.html'));
+
+  companyWindows[companyId].push(companyWindow);
 
   // Send company id to renderer process
   companyWindow.webContents.once('did-finish-load', () => {
@@ -74,6 +80,51 @@ function createProfitLossWindow(companyId) {
   });
 
   console.log('Profit & Loss window opened for Company ID:', companyId);
+}
+
+function addTransactionWindow(companyId) {
+  const addTransactionWindow = new BrowserWindow({
+    width: 1000,
+    height: 500,
+    modal: true,
+    parent: BrowserWindow.getFocusedWindow(),
+    webPreferences: {
+        contextIsolation: true,
+        nodeIntegration: false,
+        preload: path.join(__dirname, 'preload.js')
+    }
+  });
+
+  addTransactionWindow.loadFile(path.join(__dirname, 'windows', 'addTransactionWindow.html'));
+
+  addTransactionWindow.webContents.once('did-finish-load', () => {
+    addTransactionWindow.webContents.send('initialize-add-transaction', companyId);
+});
+
+console.log('Add Transaction window opened for Company ID:', companyId);
+}
+
+function createEditTransactionWindow(companyId, transactionNo) {
+  const editTransactionWindow = new BrowserWindow({
+      width: 1000,
+      height: 600,
+      modal: true,
+      parent: BrowserWindow.getFocusedWindow(),
+      webPreferences: {
+          contextIsolation: true,
+          nodeIntegration: false,
+          preload: path.join(__dirname, 'preload.js')
+      }
+  });
+
+  editTransactionWindow.loadFile(path.join(__dirname, 'windows', 'editTransactionWindow.html'));
+
+  editTransactionWindow.webContents.once('did-finish-load', () => {
+    console.log("Sending 'initialize-edit-transaction' event with:", companyId, transactionNo);
+      editTransactionWindow.webContents.send('initialize-edit-transaction', companyId, transactionNo);
+  });
+
+  console.log('Edit Transaction window opened for Company ID:', companyId, 'Transaction No:', transactionNo);
 }
 
 // Register IPC Handlers
@@ -241,11 +292,100 @@ ipcMain.handle('delete-account', async (event, companyId, accountCode) => {
   }
 });
 
+ipcMain.handle('get-active-company-id', (event) => {
+  const focusedWindow = BrowserWindow.getFocusedWindow();
+  if (!focusedWindow) return null;
+
+  // Search all companyWindows to find which one it is
+  for (const companyId in companyWindows) {
+    if (companyWindows[companyId].includes(focusedWindow)) {
+      return parseInt(companyId);
+    }
+  }
+
+  return null;
+});
 
 // Handle IPC request to open Profit & Loss window
 ipcMain.on('fetch-company-id', (event, companyId) => {
   createProfitLossWindow(companyId);
 });
+
+ipcMain.on('open-add-transaction-window', (event, companyId) => {
+  addTransactionWindow(companyId);
+});
+
+ipcMain.on('open-edit-transaction-window', (event, companyId, transactionNo) => {
+  console.log("Received request to open Edit Transaction Window for:", companyId, "Transaction No:", transactionNo);
+  createEditTransactionWindow(companyId, transactionNo);
+});
+
+ipcMain.on('refresh-page', (event, companyId) => {
+  console.log("Refreshing all windows for company ID:", companyId);
+
+  if (companyWindows[companyId]) {
+      companyWindows[companyId].forEach(win => {
+          if (!win.isDestroyed()) {
+              win.webContents.send('refresh-transactions', companyId);
+          }
+      });
+  } else {
+      console.error("No open windows found for company ID:", companyId);
+  }
+});
+
+ipcMain.on('export-profit-loss-csv', async (event, report) => {
+  try {
+      if (!report) {
+          dialog.showMessageBoxSync({ type: 'error', message: 'No data to export!' });
+          return;
+      }
+
+      const csvData = generatePLCSV(report);
+      const filePath = await showSaveDialog('ProfitLossReport.csv');
+
+      if (filePath) {
+          fs.writeFileSync(filePath, csvData);
+          dialog.showMessageBoxSync({ type: 'info', message: 'Export successful!' });
+      }
+  } catch (error) {
+      console.error('Error exporting Profit & Loss CSV:', error);
+      dialog.showMessageBoxSync({ type: 'error', message: 'Export failed.' });
+  }
+});
+
+function generatePLCSV(report) {
+  const headers = ['Account Code', 'Account Name', 'Category', 'Total Debit', 'Total Credit'];
+  const rows = [];
+
+  function addSection(title, accounts) {
+      rows.push([title, '', '', '', '']); // Section header
+      accounts.forEach(account => {
+          rows.push([account.account_code, account.account_name, account.account_type, account.totalDebit, account.totalCredit]);
+      });
+  }
+
+  addSection('Sales', report.sales);
+  addSection('Cost of Sales', report.costOfSales);
+  rows.push(['Gross Profit', '', '', '', report.totals.grossProfit]); // Add gross profit row
+  addSection('Expenses', report.expenses);
+  rows.push(['Final Profit', '', '', '', report.totals.finalProfit]); // Add final profit row
+  addSection('Profit & Loss (Brought Forward)', report.profitLoss);
+  rows.push(['P&L Carried Forward', '', '', '', report.totals.plCarriedForward]); // Add P&L carried forward
+
+  return [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+}
+
+// Function to open Save File Dialog
+async function showSaveDialog(defaultFileName) {
+  const { filePath } = await dialog.showSaveDialog({
+      title: 'Save CSV File',
+      defaultPath: defaultFileName,
+      filters: [{ name: 'CSV Files', extensions: ['csv'] }]
+  });
+
+  return filePath;
+}
 
 // Menu
 const menuTemplate = [
@@ -299,6 +439,32 @@ const menuTemplate = [
     submenu: [
       { role: 'minimize' },
       { role: 'close' }
+    ]
+  },
+  {
+    label: 'Export',
+    submenu: [
+      {
+        label: 'Profit/Loss Report',
+        click: () => {
+          const focusedWindow = BrowserWindow.getFocusedWindow();
+          if (focusedWindow) {
+            focusedWindow.webContents.send('request-export-profit-loss');
+          }
+        },
+      },
+      {
+        label: 'Trial Balance',
+        click: () => {
+
+        },
+      },
+      {
+        label: 'Transations',
+        click: () => {
+
+        }
+      },
     ]
   },
   {

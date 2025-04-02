@@ -25,6 +25,9 @@ contextBridge.exposeInMainWorld('api', {
     updateAccounts: (companyId, accounts) => ipcRenderer.invoke('update-accounts', companyId, accounts),
     deleteAccount: (companyId, accountCode) => ipcRenderer.invoke('delete-account', companyId, accountCode),
     openProfitLoss: (companyId) => ipcRenderer.invoke('open-profit-loss', companyId),
-    receive: (channel, callback) => ipcRenderer.on(channel, (_, data) => callback(data)),
+    openAddTransactionWindow: (companyId) => ipcRenderer.send('open-add-transaction-window', companyId),
+    openEditTransactionWindow: (companyId, transactionNo) => ipcRenderer.send('open-edit-transaction-window', companyId, transactionNo),
+    getActiveCompanyId: () => ipcRenderer.invoke('get-active-company-id'),
+    receive: (channel, callback) => ipcRenderer.on(channel, (_, data1, data2) => callback(data1, data2)),
     send: (channel, data) => ipcRenderer.send(channel, data),
 });

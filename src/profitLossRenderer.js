@@ -1,4 +1,7 @@
+let currentCompanyId = null;
+
 window.api.receive('load-profit-loss', async (companyId) => {
+    currentCompanyId = companyId;
     try {
         console.log("Loading Profit & Loss for Company ID:", companyId);
 
@@ -155,3 +158,92 @@ window.api.receive('load-profit-loss', async (companyId) => {
         console.error("Error loading Profit & Loss report:", error);
     }
 });
+
+window.api.receive('request-export-profit-loss', async () => {
+    try {
+        if (!currentCompanyId) {
+            window.api.showMessage("Company ID is missing.");
+            return;
+        }
+        
+        const accounts = await window.api.getAccounts(currentCompanyId);
+        const transactions = await window.api.getTransactions(currentCompanyId);
+
+        if (!accounts.length || !transactions.length) {
+            window.api.showMessage("No data to export!");
+            return;
+        }
+
+        // Process accounts and transactions (same as in the UI rendering)
+        const allAccounts = accounts.map(account => {
+            const accountTransactions = transactions.filter(t => t.account_code === account.account_code);
+
+            let totalDebit = accountTransactions.reduce((sum, t) => sum + (t.debit || 0), 0);
+            let totalCredit = accountTransactions.reduce((sum, t) => sum + (t.credit || 0), 0);
+
+            const reBalance = totalCredit - totalDebit;
+            if (reBalance > 0) {
+                totalCredit = reBalance;
+                totalDebit = 0;
+            } else {
+                totalDebit = reBalance;
+                totalCredit = 0;
+            }
+
+            return {
+                account_code: account.account_code,
+                account_name: account.account_name,
+                account_type: account.account_type,
+                totalDebit: totalDebit,
+                totalCredit: totalCredit
+            };
+        });
+
+        // Categorize accounts into P&L structure
+        const report = {
+            sales: [],
+            costOfSales: [],
+            expenses: [],
+            profitLoss: [],
+            totals: { sales: 0, costOfSales: 0, expenses: 0, profitLoss: 0 }
+        };
+
+        allAccounts.forEach(account => {
+            switch (account.account_type) {
+                case 'Sales':
+                    report.sales.push(account);
+                    report.totals.sales += account.totalCredit;
+                    report.totals.sales += account.totalDebit;
+                    break;
+                case 'Cost of Sale':
+                    report.costOfSales.push(account);
+                    report.totals.costOfSales += account.totalDebit;
+                    report.totals.costOfSales += account.totalCredit;
+                    break;
+                case 'Expense':
+                    report.expenses.push(account);
+                    report.totals.expenses += account.totalDebit;
+                    report.totals.expenses += account.totalCredit; 
+                    break;
+                case 'Profit & Loss':
+                    report.profitLoss.push(account);
+                    report.totals.profitLoss += account.totalDebit;
+                    report.totals.profitLoss += account.totalCredit;
+                    break;
+            }
+        });
+
+        // Calculate derived values
+        report.totals.grossProfit = report.totals.sales + report.totals.costOfSales;
+        report.totals.finalProfit = report.totals.grossProfit + report.totals.expenses;
+        report.totals.plCarriedForward = report.totals.finalProfit + report.totals.profitLoss;
+
+        // Send processed data to main process for export
+        window.api.send('export-profit-loss-csv', report);
+    } catch (error) {
+        console.error("Error exporting Profit & Loss:", error);
+        window.api.showMessage("Export failed.");
+    }
+});
+
+

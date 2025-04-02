@@ -2,6 +2,7 @@ init : 40 hrs (before edit)
 edit function: 18 hrs
 task 2.1: 6 hrs
 task 2.2: 9 hrs
+task 2.3: 5 hrs
 
 total:
 
@@ -77,8 +78,11 @@ task 2.2:
 
 
 task 2.3:
-  Add delete rename (manage account page) (done) 1hr
-  editing on table itself / separate window
-  put final balance at the bottom for both all account/ all transactions + (correcting account page all final to one side) (done) 1hr
-  generate profit and loss report/account (2hr)
+  Add delete rename (manage account page) (done) 
+  editing on table itself / separate window (done)
+  put final balance at the bottom for both all account/ all transactions + (correcting account page all final to one side)
+  generate profit and loss report/account (done)
   file import/export csv (on hold)
+
+task 2.4:
+  
