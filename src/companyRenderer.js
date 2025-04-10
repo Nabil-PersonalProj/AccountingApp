@@ -1,86 +1,85 @@
 // Wait for the DOM content to load
 window.addEventListener('DOMContentLoaded', () => {
-    // Retrieve all relevant DOM elements
-    const tabs = document.querySelectorAll('.tab-button');
-    const sections = document.querySelectorAll('.tab-content');
+  // Retrieve all relevant DOM elements
+  const tabs = document.querySelectorAll('.tab-button');
+  const sections = document.querySelectorAll('.tab-content');
   
-    const addTransactionBtn = document.getElementById('addTransactionBtn');
-    const editTransactionBtn = document.getElementById('editTransactionBtn');
-    const searchTransactionBtn = document.getElementById('searchTransactionBtn');
-    const transactionSearch = document.getElementById('transactionSearch');
-    const transactionBody = document.getElementById('main-transaction-body');
-    const transactionNoElement = document.getElementById('last-transaction-no');
+  const addTransactionBtn = document.getElementById('addTransactionBtn');
+  const editTransactionBtn = document.getElementById('editTransactionBtn');
+  const searchTransactionBtn = document.getElementById('searchTransactionBtn');
+  const transactionSearch = document.getElementById('transactionSearch');
+  const transactionBody = document.getElementById('main-transaction-body');
   
-    let currentCompanyId = null;
+  let currentCompanyId = null;
   
-    ////////////////////////////////////////// Load Company Data //////////////////////////////////////////
-    window.api.loadTransactions(async (companyId) => {
-      try {
-        currentCompanyId = companyId;
-        const companyName = await window.api.getCompanyName(companyId);
-        updateTitle(companyName);
+  ////////////////////////////////////////// Load Company Data //////////////////////////////////////////
+  window.api.loadTransactions(async (companyId) => {
+    try {
+      currentCompanyId = companyId;
+      const companyName = await window.api.getCompanyName(companyId);
+      updateTitle(companyName);
   
-        const transactions = await window.api.getTransactions(companyId);
-        loadMainTab(transactions);
-        loadTransactionsTab(transactions);
-        loadAccountsTab(companyId);
+      const transactions = await window.api.getTransactions(companyId);
+      loadMainTab(transactions);
+      loadTransactionsTab(transactions);
+      loadAccountsTab(companyId);
   
-        setupTabNavigation();
-      } catch (error) {
-        console.error('Error loading data:', error);
-        window.api.showMessage('An error occurred while loading company data. Please refresh the page.');
-      }
-    });
+      setupTabNavigation();
+    } catch (error) {
+      console.error('Error loading data:', error);
+      window.api.showMessage('An error occurred while loading company data. Please refresh the page.');
+    }
+  });
   
-    function updateTitle(companyName) {
-      document.title = companyName;
-      document.getElementById('companyName').textContent = companyName;
+  function updateTitle(companyName) {
+    document.title = companyName;
+    document.getElementById('companyName').textContent = companyName;
+  }
+  
+  // Load the main tab with the latest transactions
+  function loadMainTab(transactions) {
+    console.log("loading main tab");
+    if (!transactions || transactions.length === 0) {
+      transactionBody.innerHTML = '<tr><td colspan="6">No transactions available.</td></tr>';
+      return;
     }
   
-    // Load the main tab with the latest transactions
-    function loadMainTab(transactions) {
-      console.log("loading main tab");
-      if (!transactions || transactions.length === 0) {
-        transactionBody.innerHTML = '<tr><td colspan="6">No transactions available.</td></tr>';
-        return;
-      }
+    const latestTransactionNo = Math.max(...transactions.map(t => t.transaction_no));
+    const filteredTransactions = transactions.filter(t => t.transaction_no === latestTransactionNo);
   
-      const latestTransactionNo = Math.max(...transactions.map(t => t.transaction_no));
-      const filteredTransactions = transactions.filter(t => t.transaction_no === latestTransactionNo);
+    document.getElementById('last-transaction-no').textContent = `Last Transaction No: ${latestTransactionNo}`;
   
-      document.getElementById('last-transaction-no').textContent = `Last Transaction No: ${latestTransactionNo}`;
+    transactionBody.innerHTML = filteredTransactions.map(transaction => `
+      <tr>
+        <td>${transaction.date}</td>
+        <td>${transaction.transaction_no}</td>
+        <td>${transaction.account_code}</td>
+        <td>${transaction.description}</td>
+        <td>${transaction.debit}</td>
+        <td>${transaction.credit}</td>
+      </tr>
+    `).join('');
+  }
   
-      transactionBody.innerHTML = filteredTransactions.map(transaction => `
-        <tr>
-          <td>${transaction.date}</td>
-          <td>${transaction.transaction_no}</td>
-          <td>${transaction.account_code}</td>
-          <td>${transaction.description}</td>
-          <td>${transaction.debit}</td>
-          <td>${transaction.credit}</td>
-        </tr>
-      `).join('');
+  // Load all transactions into the Transactions tab
+  function loadTransactionsTab(transactions) {
+    console.log("loading transaction tab");
+    const transactionsBody = document.getElementById('transactions-body');
+    if (!transactions || transactions.length === 0) {
+      transactionsBody.innerHTML = '<tr><td colspan="6">No transactions available.</td></tr>';
+      return;
     }
-  
-    // Load all transactions into the Transactions tab
-    function loadTransactionsTab(transactions) {
-      console.log("loading transaction tab");
-      const transactionsBody = document.getElementById('transactions-body');
-      if (!transactions || transactions.length === 0) {
-        transactionsBody.innerHTML = '<tr><td colspan="6">No transactions available.</td></tr>';
-        return;
-      }
       
-      // Group transactions by transaction number
-      const groupedTransactions = transactions.reduce((acc, transaction) => {
-        if (!acc[transaction.transaction_no]) acc[transaction.transaction_no] = [];
-        acc[transaction.transaction_no].push(transaction);
-        return acc;
-      }, {});
+    // Group transactions by transaction number
+    const groupedTransactions = transactions.reduce((acc, transaction) => {
+      if (!acc[transaction.transaction_no]) acc[transaction.transaction_no] = [];
+      acc[transaction.transaction_no].push(transaction);
+      return acc;
+    }, {});
   
-      let totalDebit = 0;
-      let totalCredit = 0;
-      let tableContent = '';
+    let totalDebit = 0;
+    let totalCredit = 0;
+    let tableContent = '';
   
       Object.keys(groupedTransactions).forEach(transactionNo => {
         tableContent += `<tr class="transaction-group"><td colspan="6"><strong>Transaction No: ${transactionNo}</strong></td></tr>`;
@@ -477,16 +476,102 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-  });
+});
 
 window.api.receive('request-export-trial-balance', async () => {
+  try {
     const companyId = await window.api.getActiveCompanyId();
-    window.api.send('export-trial-balance-csv', companyId);
+
+    if (!companyId) {
+      window.api.showMessage("Company ID is missing.");
+      return;
+    }
+
+    const accounts = await window.api.getAccounts(companyId);
+
+    if (!accounts || accounts.length === 0) {
+      window.api.showMessage("No accounts available to export.");
+      return;
+    }
+
+    const groupedAccounts = {};
+    accounts.forEach(account => {
+      if (!groupedAccounts[account.account_type]) {
+        groupedAccounts[account.account_type] = [];
+      }
+      groupedAccounts[account.account_type].push(account);
+    });
+
+    const report = [];
+
+    Object.entries(groupedAccounts).forEach(([type, list]) => {
+      report.push({ section: type, isHeader: true });
+      list.forEach(account => {
+        report.push({
+          account_code: account.account_code,
+          account_name: account.account_name,
+          account_type: type,
+          debit: parseFloat(account.debit || 0).toFixed(2),
+          credit: parseFloat(account.credit || 0).toFixed(2),
+        });
+      });
+    });
+
+    // ✅ Send the processed report array to the main process
+    window.api.send('export-trial-balance-csv', report);
+
+  } catch (error) {
+    console.error("Error exporting Trial Balance:", error);
+    window.api.showMessage("Export failed.");
+  }
 });
 
 window.api.receive('request-export-transactions', async () => {
+  try {
     const companyId = await window.api.getActiveCompanyId();
-    window.api.send('export-transactions-csv', companyId);
+
+    if (!companyId) {
+      window.api.showMessage("Company ID is missing.");
+      return;
+    }
+
+    const transactions = await window.api.getTransactions(companyId);
+
+    if (!transactions || transactions.length === 0) {
+      window.api.showMessage("No transactions available to export.");
+      return;
+    }
+
+    // Group by transaction_no
+    const grouped = transactions.reduce((acc, t) => {
+      if (!acc[t.transaction_no]) acc[t.transaction_no] = [];
+      acc[t.transaction_no].push(t);
+      return acc;
+    }, {});
+
+    const exportRows = [];
+
+    Object.entries(grouped).forEach(([transactionNo, txns]) => {
+      exportRows.push({ isHeader: true, label: `Transaction No: ${transactionNo}` });
+
+      txns.forEach(t => {
+        exportRows.push({
+          date: t.date,
+          transaction_no: t.transaction_no,
+          account_code: t.account_code,
+          description: t.description,
+          debit: parseFloat(t.debit || 0).toFixed(2),
+          credit: parseFloat(t.credit || 0).toFixed(2),
+        });
+      });
+    });
+
+    window.api.send('export-transactions-csv', exportRows);
+
+  } catch (error) {
+    console.error("Error exporting transactions:", error);
+    window.api.showMessage("Export failed.");
+  }
 });
 
   

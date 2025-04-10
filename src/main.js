@@ -335,6 +335,55 @@ ipcMain.on('refresh-page', (event, companyId) => {
   }
 });
 
+ipcMain.on('export-trial-balance-csv', async (event, report) => {
+  try {
+      const csvData = generateTrialBalanceCSV(report);
+      const filePath = await showSaveDialog('TrialBalance.csv');
+      if (filePath) {
+          fs.writeFileSync(filePath, csvData);
+          dialog.showMessageBoxSync({ type: 'info', message: 'Export successful!' });
+      }
+  } catch (error) {
+      console.error('Error exporting Trial Balance CSV:', error);
+      dialog.showMessageBoxSync({ type: 'error', message: 'Export failed.' });
+  }
+});
+
+function generateTrialBalanceCSV(report) {
+  const headers = ['Account Code', 'Account Name', 'Account Type', 'Debit', 'Credit'];
+  const rows = [];
+
+  report.forEach(row => {
+      if (row.isHeader) {
+          rows.push([row.section, '', '', '', '']);
+      } else {
+          rows.push([
+              row.account_code,
+              row.account_name,
+              row.account_type,
+              row.debit,
+              row.credit
+          ]);
+      }
+  });
+
+  return [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+}
+
+function generateTransactionsCSV(transactions) {
+  const headers = ['Date', 'Transaction No', 'Account Code', 'Description', 'Debit', 'Credit'];
+  const rows = transactions.map(t => [
+      t.date,
+      t.transaction_no,
+      t.account_code,
+      t.description,
+      t.debit,
+      t.credit
+  ]);
+
+  return [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+}
+
 ipcMain.on('export-profit-loss-csv', async (event, report) => {
   try {
       if (!report) {
@@ -387,6 +436,49 @@ async function showSaveDialog(defaultFileName) {
 
   return filePath;
 }
+
+ipcMain.on('export-transactions-csv', async (event, report) => {
+  try {
+    if (!Array.isArray(report) || report.length === 0) {
+      dialog.showMessageBoxSync({ type: 'error', message: 'No transactions to export.' });
+      return;
+    }
+
+    const csvData = generateTransactionsCSV(report);
+    const filePath = await showSaveDialog('Transactions.csv');
+
+    if (filePath) {
+      fs.writeFileSync(filePath, csvData);
+      dialog.showMessageBoxSync({ type: 'info', message: 'Export successful!' });
+    }
+  } catch (error) {
+    console.error('Error exporting Transactions CSV:', error);
+    dialog.showMessageBoxSync({ type: 'error', message: 'Export failed.' });
+  }
+});
+
+function generateTransactionsCSV(report) {
+  const headers = ['Date', 'Transaction No', 'Account Code', 'Description', 'Debit', 'Credit'];
+  const rows = [headers.join(',')];
+
+  report.forEach(row => {
+    if (row.isHeader) {
+      rows.push([row.label, '', '', '', '', ''].join(','));
+    } else {
+      rows.push([
+        row.date,
+        row.transaction_no,
+        row.account_code,
+        row.description,
+        row.debit,
+        row.credit
+      ].join(','));
+    }
+  });
+
+  return rows.join('\n');
+}
+
 
 // Menu
 const menuTemplate = [
@@ -457,13 +549,19 @@ const menuTemplate = [
       {
         label: 'Trial Balance',
         click: () => {
-
+          const focusedWindow = BrowserWindow.getFocusedWindow();
+          if (focusedWindow) {
+            focusedWindow.webContents.send('request-export-trial-balance');
+          }
         },
       },
       {
         label: 'Transations',
         click: () => {
-
+          const focusedWindow = BrowserWindow.getFocusedWindow();
+          if (focusedWindow) {
+            focusedWindow.webContents.send('request-export-transactions');
+          }
         }
       },
     ]

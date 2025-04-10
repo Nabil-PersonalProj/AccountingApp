@@ -87,5 +87,5 @@ task 2.3:
 task 2.4:
   import/export
     profit/loss (done)
-    transactions
-    trial balance
+    transactions (done)
+    trial balance (done)
