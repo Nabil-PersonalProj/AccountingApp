@@ -42,36 +42,7 @@ function renderCompanyCards(companies) {
 
 // Handle adding a new company
 addCompanyBtn.addEventListener('click', () => {
-  addCompanyModal.style.display = 'flex';
-});
-
-// Hide the modal
-cancelCompanyBtn.addEventListener('click', () => {
-  addCompanyModal.style.display = 'none';
-  companyNameInput.value = ''; // Clear input field
-});
-
-// Save company
-saveCompanyBtn.addEventListener('click', async () => {
-  const name = companyNameInput.value.trim();
-  if (!name) {
-      alert('Company name is required!');
-      return;
-  }
-
-  try {
-      const response = await window.api.addCompany(name);
-      if (!response.success) {
-          alert(response.message);
-          return;
-      }
-      addCompanyModal.style.display = 'none';
-      companyNameInput.value = '';
-      loadCompanies();
-  } catch (error) {
-      console.error('Error adding company:', error);
-      alert('Failed to add company. Please try again.');
-  }
+  window.api.openAddCompanyWindow();
 });
 
 deleteCompanyBtn.addEventListener('click', async () => {
@@ -154,5 +125,9 @@ window.addEventListener("DOMContentLoaded", () => {
       makeModalDraggable(modalElement, headerElement);
     }
   });
+});
+
+window.api.receive('refresh-companies', () => {
+  loadCompanies();
 });
 

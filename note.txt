@@ -85,7 +85,14 @@ task 2.3:
   file import/export csv (on hold)
 
 task 2.4:
-  import/export
+  export
     profit/loss (done)
     transactions (done)
     trial balance (done)
+
+task 2.5:
+  import
+  export balance sheet
+  check on the database local save where??
+  carry forward function
+

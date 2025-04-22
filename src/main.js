@@ -128,6 +128,22 @@ function createEditTransactionWindow(companyId, transactionNo) {
   console.log('Edit Transaction window opened for Company ID:', companyId, 'Transaction No:', transactionNo);
 }
 
+function createAddCompanyWindow() {
+  const addWindow = new BrowserWindow({
+    width: 500,
+    height: 300,
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      preload: path.join(__dirname, 'preload.js'),
+    },
+  });
+
+  addWindow.loadFile(path.join(__dirname, 'windows', 'addCompanyWindow.html'));
+  console.log('Add Company window opened');
+}
+
+
 // Register IPC Handlers
 ipcMain.handle('show-message', async (event, message, title) => {
   await dialog.showMessageBox({
@@ -149,7 +165,14 @@ ipcMain.handle('get-companies', async () => {
 
 ipcMain.handle('add-company', async (event, name) => {
   try {
-    return { success: true, message: await addCompany(name) };
+    const message = await addCompany(name);
+
+    // Send refresh-companies to all renderer processes (or target mainWindow specifically if you track it)
+    BrowserWindow.getAllWindows().forEach(win => {
+      win.webContents.send('refresh-companies');
+    });
+
+    return { success: true, message };
   } catch (error) {
     console.error('Error adding company:', error);
     return { success: false, message: error.message };
@@ -315,6 +338,11 @@ ipcMain.on('fetch-company-id', (event, companyId) => {
 ipcMain.on('open-add-transaction-window', (event, companyId) => {
   addTransactionWindow(companyId);
 });
+
+ipcMain.on('open-add-company-window', () => {
+  createAddCompanyWindow();
+});
+
 
 ipcMain.on('open-edit-transaction-window', (event, companyId, transactionNo) => {
   console.log("Received request to open Edit Transaction Window for:", companyId, "Transaction No:", transactionNo);
