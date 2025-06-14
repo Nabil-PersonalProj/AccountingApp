@@ -11,6 +11,8 @@ window.addEventListener('DOMContentLoaded', () => {
   const transactionBody = document.getElementById('main-transaction-body');
   
   let currentCompanyId = null;
+  let isCarryForwardToNewCompany = false;
+  let carryForwardSourceCompanyId = null;
   
   ////////////////////////////////////////// Load Company Data //////////////////////////////////////////
   window.api.loadTransactions(async (companyId) => {
@@ -309,6 +311,83 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    window.api.receive('initiate-carry-forward-to-new-company', async () => {
+      if (!currentCompanyId) {
+        return window.api.showMessage('No active company to carry forward from.');
+      }
+    
+      isCarryForwardToNewCompany = true;
+      carryForwardSourceCompanyId = currentCompanyId;
+    
+      // Reuse existing flow to open add company window
+      window.api.openAddCompanyWindow();
+    });
+
+    window.api.receive('carry-forward-after-company-created', async (newCompanyId) => {
+      if (!isCarryForwardToNewCompany || !carryForwardSourceCompanyId) {
+        console.log("[Carry Forward] Not triggered via carry forward flow.");
+        return; // This wasn't a carry forward operation
+      }
+    
+      try {
+        console.log(`[Carry Forward] Starting from company ID: ${carryForwardSourceCompanyId} to new company ID: ${newCompanyId}`);
+        const [sourceAccounts, plReport] = await Promise.all([
+          window.api.getAccounts(carryForwardSourceCompanyId),
+          window.api.getProfitLossSummary(carryForwardSourceCompanyId)
+        ]);
+
+        console.log("[Carry Forward] Accounts and P&L Report fetched.");
+    
+        const plAccountsToCarry = plReport.profitLoss.filter(a =>
+          parseFloat(a.totalDebit || 0) !== 0 || parseFloat(a.totalCredit || 0) !== 0
+        );
+
+        console.log(`[Carry Forward] Found ${plAccountsToCarry.length} P&L accounts to carry.`);
+    
+        const clonedAccounts = sourceAccounts.map(acc => ({
+          account_code: acc.account_code,
+          account_name: acc.account_name,
+          account_type: acc.account_type
+        }));
+
+        console.log(`[Carry Forward] Cloning ${clonedAccounts.length} accounts.`);
+    
+        // Step 1: Create all accounts in the new company
+        for (const acc of clonedAccounts) {
+          console.log(`[Carry Forward] Adding account: ${acc.account_code}`);
+          await window.api.addAccount(newCompanyId, acc.account_code, acc.account_name, acc.account_type);
+        }
+    
+        // Step 2: Prepare carry forward transaction
+        const carryForwardTransaction = plAccountsToCarry.map(account => {
+          console.log(`[Carry Forward] Preparing transaction for ${account.account_code} with balance ${balance}`);
+          const balance = (account.totalCredit || 0) - (account.totalDebit || 0);
+          return {
+            transaction_no: 1,
+            date: new Date().toISOString().split('T')[0],
+            account_code: account.account_code,
+            description: "Carried forward from previous company",
+            debit: balance < 0 ? Math.abs(balance) : 0,
+            credit: balance > 0 ? balance : 0
+          };
+        });
+        
+        console.log("[Carry Forward] Adding initial transaction...");
+        await window.api.addTransaction(newCompanyId, carryForwardTransaction);
+
+        console.log("[Carry Forward] Success! Opening new company...");
+        window.api.showMessage("Carry forward completed and new company initialized!");
+    
+      } catch (err) {
+        console.error("[Carry Forward] Error:", err);
+        window.api.showMessage("An error occurred while carrying forward to new company.");
+      } finally {
+        // Reset the flags
+        isCarryForwardToNewCompany = false;
+        carryForwardSourceCompanyId = null;
+      }
+    });
+
     //////////////////////////// Accounts /////////////////////////////////////////////////////////
     window.api.onOpenAddAccount(() => {
         document.getElementById('accountManagerModal').style.display = 'block';
@@ -321,72 +400,91 @@ window.addEventListener('DOMContentLoaded', () => {
     })
 
     document.getElementById('saveAccountChangesBtn').addEventListener('click', async () => {
-        const rows = document.querySelectorAll('#accountManagerBody tr');
-        const modifiedAccounts = [];
-        const newAccounts = [];
-        const deletedAccounts = [...window.originalAccounts];
+      // 1. Filter out the “No accounts available” row
+      const allRows = Array.from(
+        document.querySelectorAll('#accountManagerBody tr')
+      );
+      const inputRows = allRows.filter(row =>
+        row.querySelector('.account-code')
+      );
 
-        const allAccountCodes = new Set();
-        let hasDuplicates = false;
+      // 2. Prepare our diff buckets
+      const newAccounts = [];
+      const modifiedAccounts = [];
+      const seenCodes = new Set();
 
-        rows.forEach(row => {
-            const accountCodeInput = row.querySelector('.account-code');
-            const accountCode = accountCodeInput ? accountCodeInput.value.trim() : row.dataset.accountId;
-            const accountName = row.querySelector('.account-name').value.trim();
-            const accountType = row.querySelector('.account-type').value.trim();
+      // 3. Loop & validate
+      for (const row of inputRows) {
+        const codeInput = row.querySelector('.account-code');
+        const nameInput = row.querySelector('.account-name');
+        const typeInput = row.querySelector('.account-type');
 
-            // Check if account code already exists
-            if (allAccountCodes.has(accountCode)) {
-            hasDuplicates = true;
-            //accountCodeInput.style.border = "2px solid red"; // Highlight the duplicate field
-            } else {
-            allAccountCodes.add(accountCode);
-            //accountCodeInput.style.border = ""; // Remove highlight if valid
-            }
-        
-            if (!accountCode || !accountName || !accountType) {
-            window.api.showMessage("All fields are required!");
-            return;
-            }
-        
-            if (row.classList.contains('new-account-row')) {
-                newAccounts.push({ account_code: accountCode, account_name: accountName, account_type: accountType });
-            } else {
-                const original = window.originalAccounts.find(a => a.account_code === accountCode);
-                if (original) {
-                    deletedAccounts.splice(deletedAccounts.indexOf(original), 1);
-                    if (original.account_name !== accountName || original.account_type !== accountType) {
-                        modifiedAccounts.push({ account_code: accountCode, account_name: accountName, account_type: accountType });
-                    }
-                }
-            }
-        });
+        const code = codeInput.value.trim();
+        const name = nameInput.value.trim();
+        const type = typeInput.value.trim();
 
-        if (hasDuplicates) {
-        window.api.showMessage("Duplicate account codes detected. Please ensure each account code is unique.");
-        return;
+        if (!code || !name || !type) {
+          return window.api.showMessage('All fields are required!');  
+        }
+        if (seenCodes.has(code)) {
+          return window.api.showMessage(
+            `Duplicate account code: ${code}. Please use unique codes.`
+          );
+        }
+        seenCodes.add(code);
+
+        if (row.classList.contains('new-account-row')) {
+          newAccounts.push({ account_code: code, account_name: name, account_type: type });
+        } else {
+          const original = window.originalAccounts.find(a => a.account_code === row.dataset.accountId);
+          if (
+            original.account_name !== name ||
+            original.account_type !== type ||
+            original.account_code !== code
+          ) {
+            modifiedAccounts.push({ account_code: code, account_name: name, account_type: type });
+          }
+        }
+      }
+
+      // 4. Figure out which originals got deleted
+      const deletedAccounts = window.originalAccounts
+        .filter(a => !seenCodes.has(a.account_code));
+
+      try {
+        // 5a. Add new ones: (companyId, code, name, type) :contentReference[oaicite:0]{index=0}:contentReference[oaicite:1]{index=1}
+        await Promise.all(
+          newAccounts.map(acc =>
+            window.api.addAccount(
+              currentCompanyId,
+              acc.account_code,
+              acc.account_name,
+              acc.account_type
+            )
+          )
+        );
+
+        // 5b. Update modified: (companyId, [ { account_code, account_name, account_type }, … ]) :contentReference[oaicite:2]{index=2}:contentReference[oaicite:3]{index=3}
+        if (modifiedAccounts.length) {
+          await window.api.updateAccounts(currentCompanyId, modifiedAccounts);
         }
 
-        try {
-            if (newAccounts.length > 0) {
-                const addPromises = newAccounts.map(acc => window.api.addAccount(currentCompanyId, acc.account_code, acc.account_name, acc.account_type));
-                await Promise.all(addPromises);
-            }
-            if (modifiedAccounts.length > 0) {
-                await window.api.updateAccounts(currentCompanyId, modifiedAccounts);
-            }
-            if (deletedAccounts.length > 0) {
-                const deletePromises = deletedAccounts.map(acc => window.api.deleteAccount(currentCompanyId, acc.account_code));
-                await Promise.all(deletePromises);
-            }
+        // 5c. Delete removed: (companyId, accountCode) :contentReference[oaicite:4]{index=4}:contentReference[oaicite:5]{index=5}
+        await Promise.all(
+          deletedAccounts.map(acc =>
+            window.api.deleteAccount(currentCompanyId, acc.account_code)
+          )
+        );
 
-            window.api.showMessage('Account changes saved successfully!');
-            document.getElementById('accountManagerModal').style.display = 'none';
-            refresh(currentCompanyId);
-        } catch (error) {
-            console.error('Error saving account changes:', error);
-        }
-        refresh(currentCompanyId)
+        // 6. Feedback & refresh
+        window.api.showMessage('Account changes saved successfully!');
+        document.getElementById('accountManagerModal').style.display = 'none';
+        refresh(currentCompanyId);
+
+      } catch (err) {
+        console.error('Error saving account changes:', err);
+        window.api.showMessage('An error occurred. Please try again.');
+      }
     });
 
     document.addEventListener('click', (event) => {

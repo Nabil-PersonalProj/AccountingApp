@@ -29,6 +29,7 @@ contextBridge.exposeInMainWorld('api', {
     openEditTransactionWindow: (companyId, transactionNo) => ipcRenderer.send('open-edit-transaction-window', companyId, transactionNo),
     getActiveCompanyId: () => ipcRenderer.invoke('get-active-company-id'),
     openAddCompanyWindow: () => ipcRenderer.send('open-add-company-window'),
+    getProfitLossSummary: (companyId) => ipcRenderer.invoke('get-profit-loss-summary', companyId),
     receive: (channel, callback) => ipcRenderer.on(channel, (_, data1, data2) => callback(data1, data2)),
     send: (channel, data) => ipcRenderer.send(channel, data),
 });

@@ -19,6 +19,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 async function loadCompanies() {
   try {
+    console.log('[mainRenderer] loading companies')
     const companies = await window.api.getCompanies(); // Use exposed API
     renderCompanyCards(companies);
   } catch (error) {
@@ -38,6 +39,7 @@ function renderCompanyCards(companies) {
   });
   companyList.innerHTML = ''; // Clear only once
   companyList.appendChild(fragment); // Append all at once
+  console.log('[mainRenderer] loading company cards');
 }
 
 // Handle adding a new company
@@ -52,6 +54,8 @@ deleteCompanyBtn.addEventListener('click', async () => {
     deleteCompanySelect.innerHTML = companies.map(company => 
       `<option value="${company.id}">${company.name}</option>`
     ).join('');
+
+    console.log('[mainRenderer] deleting company');
 
     // Show the modal
     deleteCompanyModal.style.display = 'flex';
@@ -128,6 +132,7 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 window.api.receive('refresh-companies', () => {
+  console.log('[mainRenderer] reload companies');
   loadCompanies();
 });
 

@@ -96,3 +96,19 @@ task 2.5:
   check on the database local save where??
   carry forward function
 
+
+  balance sheet notes:
+
+  sc1......X + pl1 = P (all sc accounts) PL account only 1
+
+  fixed assests = (FD1 - PD1) + .... + (FDX - PDX) = A
+
+  Current Assets = TD 1........X + all assets accounts = B (all debtors and assets) *should be on debit side if not on debit bracket value to show
+
+  Current Liabilities = TC 1.........X + all Liabilities = C (all creditors and Liabilities) *should be on credit side if not on credit bracket value to show
+
+  Net current = B - C = D
+
+  A + D == P 
+
+task 2.6:

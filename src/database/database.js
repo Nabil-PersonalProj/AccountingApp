@@ -31,11 +31,13 @@ mainDb.serialize(() => {
       accounts_db_path TEXT NOT NULL
     )
   `);
+  console.log('[database] initilize database')
 });
 
 // Helper function to get database path
 async function getCompanyDbPath(companyId) {
   return new Promise((resolve, reject) => {
+    console.log('[database] Getting company DB');
     mainDb.get( `SELECT transactions_db_path, accounts_db_path FROM companies WHERE id = ?`, [companyId], (err, row) => {
       if (err) {
         console.error("Database Error: ", err);
@@ -56,6 +58,7 @@ async function getCompanyDbPath(companyId) {
 // Add a new company for each company added, the db for that company is also initialized
 function addCompany(name) {
   return new Promise((resolve, reject) => {
+      console.log('[database] add new company');
       const transactionrelativeDbPath = `company_database/${name.replace(/\s+/g, '_').toLowerCase()}.db`;
       const transactionabsoluteDbPath = path.join(__dirname, transactionrelativeDbPath);
       const accountsrelativeDbPath = `company_accounts/${name.replace(/\s+/g, '_').toLowerCase()}_accounts.db`
@@ -89,6 +92,7 @@ function addCompany(name) {
 // Retrieve the list of companies
 function getCompanies() {
   return new Promise((resolve, reject) => {
+    console.log('[database] getting all the company');
     mainDb.all(`SELECT * FROM companies`, (err, rows) => {
       if (err) return reject(err);
       resolve(rows);
@@ -98,6 +102,7 @@ function getCompanies() {
 
 async function deleteCompany(companyId) {
   return new Promise(async (resolve, reject) => {
+    console.log('[database] delete company');
     try {
       const { transactionsDbPath, accountsDbPath } = await getCompanyDbPath(companyId);
 
@@ -133,6 +138,7 @@ async function deleteCompany(companyId) {
 // Initialize a company's database with the `transactions` table
 function initializeTransactionDatabase(dbPath) {
   return new Promise((resolve, reject) => {
+    console.log('[database][CompanyDB] initializing');
     const db = new sqlite3.Database(dbPath);
     db.serialize(() => {
       db.run(`
@@ -160,6 +166,7 @@ function initializeTransactionDatabase(dbPath) {
 // Fetch all transactions for a company
 function getTransactions(companyId) {
   return new Promise(async (resolve, reject) => {
+    console.log('[database][CompanyDB] getting transactions')
     try {
       const { transactionsDbPath } = await getCompanyDbPath(companyId);
       const db = new sqlite3.Database(transactionsDbPath);
@@ -177,6 +184,7 @@ function getTransactions(companyId) {
 // Fetch the last transaction for a company
 function getLastTransaction(companyId) {
   return new Promise(async (resolve, reject) => {
+    console.log('[database][CompanyDB] Get last transaction');
     try {
       const { transactionsDbPath } = await getCompanyDbPath(companyId);
       const db = new sqlite3.Database(transactionsDbPath);
@@ -194,6 +202,7 @@ function getLastTransaction(companyId) {
 // Add multiple transactions to a company's database
 function addTransaction(companyId, transactions) {
   return new Promise(async (resolve, reject) => {
+    console.log('[database][CompanyDB] adding transactions')
     try {
       const { transactionsDbPath } = await getCompanyDbPath(companyId);
       const db = new sqlite3.Database(transactionsDbPath);
@@ -234,6 +243,7 @@ function addTransaction(companyId, transactions) {
 }
 
 async function searchTransaction(companyId, searchQuery) {
+  console.log('[database][CompanyDB] Searching for transactions');
   try {
     const { transactionsDbPath } = await getCompanyDbPath(companyId);
     const companyDb = new sqlite3.Database(transactionsDbPath);
@@ -258,6 +268,7 @@ async function searchTransaction(companyId, searchQuery) {
 // Update multiple transactions at once
 function updateTransactions(companyId, transactions) {
   return new Promise(async (resolve, reject) => {
+    console.log('[database][CompanyDB] updating transactions');
     if (!transactions || transactions.length === 0) return resolve('No transactions to update');
     try {
       const { transactionsDbPath } = await getCompanyDbPath(companyId);
@@ -295,6 +306,7 @@ function updateTransactions(companyId, transactions) {
 // Delete multiple transactions
 function deleteTransactions(companyId, transactionIds) {
   return new Promise(async (resolve, reject) => {
+    console.log('[database][CompanyDB] deleting transactions');
     if (!transactionIds || transactionIds.length === 0) {
       return resolve('No transactions to delete.');
     }
@@ -319,9 +331,10 @@ function deleteTransactions(companyId, transactionIds) {
   });
 }
 
-////////////////////////////////////////// Accoutndb ////////////////////////////////////////////////////////
+////////////////////////////////////////// Accountdb ////////////////////////////////////////////////////////
 function initializeAccountsDatabase(dbPath) {
   return new Promise((resolve, reject) => {
+    console.log('[database][AccountDb] initializing');
     const db = new sqlite3.Database(dbPath);
     db.serialize(() => {
       db.run(`

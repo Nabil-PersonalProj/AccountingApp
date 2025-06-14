@@ -15,7 +15,12 @@ saveCompanyBtn.addEventListener('click', async () => {
       window.api.showMessage(response.message);
       return;
     }
-
+    
+    //  If part of a carry forward flow, notify the main window
+    if (response.newCompanyId) {
+      window.api.send('carry-forward-after-company-created', response.newCompanyId);
+    }
+    
     window.api.send('refresh-companies');
     window.close();
   } catch (error) {

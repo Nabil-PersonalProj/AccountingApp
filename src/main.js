@@ -14,6 +14,7 @@ const isDev = process.env.NODE_ENV != 'development';
 
 // main window
 function createMainWindow() {
+  console.log('[Main] createMainWindow()');
   const mainWindow = new BrowserWindow({
     width: 1000,
     height: 800,
@@ -28,7 +29,6 @@ function createMainWindow() {
   
   
   mainWindow.loadFile(path.join(__dirname, 'windows', 'mainWindowcard.html'));
-  console.log('main window loaded');
 }
 
 // Create company window
@@ -60,7 +60,7 @@ function createCompanyWindow(companyId) {
     companyWindow.webContents.send('load-transactions', companyId);
   });
 
-  console.log('company window loaded. Id:', companyId);
+  console.log(`[Main] createCompanyWindow(${companyId})`);
 }
 
 function createProfitLossWindow(companyId) {
@@ -79,8 +79,7 @@ function createProfitLossWindow(companyId) {
   profitLossWindow.webContents.on('did-finish-load', () => {
     profitLossWindow.webContents.send('load-profit-loss', companyId);
   });
-
-  console.log('Profit & Loss window opened for Company ID:', companyId);
+  console.log(`[Main] createProfitLossWindow(${companyId})`);
 }
 
 function addTransactionWindow(companyId) {
@@ -102,7 +101,7 @@ function addTransactionWindow(companyId) {
     addTransactionWindow.webContents.send('initialize-add-transaction', companyId);
 });
 
-console.log('Add Transaction window opened for Company ID:', companyId);
+console.log('[Main] Add Transaction window opened for Company ID:', companyId);
 }
 
 function createEditTransactionWindow(companyId, transactionNo) {
@@ -125,7 +124,7 @@ function createEditTransactionWindow(companyId, transactionNo) {
       editTransactionWindow.webContents.send('initialize-edit-transaction', companyId, transactionNo);
   });
 
-  console.log('Edit Transaction window opened for Company ID:', companyId, 'Transaction No:', transactionNo);
+  console.log('[Main] Edit Transaction window opened for Company ID:', companyId, 'Transaction No:', transactionNo);
 }
 
 function createAddCompanyWindow() {
@@ -140,7 +139,7 @@ function createAddCompanyWindow() {
   });
 
   addWindow.loadFile(path.join(__dirname, 'windows', 'addCompanyWindow.html'));
-  console.log('Add Company window opened');
+  console.log('[Main] Add Company window opened');
 }
 
 
@@ -155,35 +154,49 @@ ipcMain.handle('show-message', async (event, message, title) => {
 });
 
 ipcMain.handle('get-companies', async () => {
-  try {
+  try { 
+    console.log(`[Main][IPC] get-companies `);
     return await getCompanies();
   } catch (error) {
-    console.error('Error in handler for get-companies:', error);
+    console.error('[Main][IPC] Error in handler for get-companies:', error);
     throw error;
   }
 });
 
 ipcMain.handle('add-company', async (event, name) => {
   try {
-    const message = await addCompany(name);
+    console.log(`[Main][IPC] add-companies (${name})`);
+    const companiesBefore = await getCompanies();
+    const addResult = await addCompany(name);
+    const companiesAfter = await getCompanies();
+
+    // Determine the new company ID by diffing
+    const newCompany = companiesAfter.find(c => !companiesBefore.some(cb => cb.id === c.id));
+    const newCompanyId = newCompany?.id;
+
 
     // Send refresh-companies to all renderer processes (or target mainWindow specifically if you track it)
     BrowserWindow.getAllWindows().forEach(win => {
       win.webContents.send('refresh-companies');
     });
 
-    return { success: true, message };
+    return {
+      success: true,
+      message: addResult,
+      newCompanyId: newCompanyId,
+    };
   } catch (error) {
-    console.error('Error adding company:', error);
+    console.error('[Main][IPC] Error adding company:', error);
     return { success: false, message: error.message };
   }
 });
 
 ipcMain.handle('open-company-window', async (event,companyId) => {
   try {
+    console.log(`[Main][IPC] open-company-window (${companyId})`);
     createCompanyWindow(companyId);
   } catch (error) {
-    console.error('Error opening company window:', error);
+    console.error('[Main][IPC] Error opening company window:', error);
     throw error;
   }
 });
@@ -191,105 +204,111 @@ ipcMain.handle('open-company-window', async (event,companyId) => {
 // Fetch the name of a specific company by ID
 ipcMain.handle('get-company-name', async (event, companyId) => {
   try {
+    console.log(`[Main][IPC] get-company-name (${companyId})`);
     const companies = await getCompanies();
     const company = companies.find(c => c.id === companyId);
     if (!company) throw new Error(`Company with ID ${companyId} not found`);
     return company.name;
   } catch (error) {
-    console.error(`Error fetching company name for ID ${companyId}:`, error);
+    console.error(`[Main][IPC] Error fetching company name for ID ${companyId}:`, error);
     throw error;
   }
 });
 
 ipcMain.handle('get-transactions', async (event, companyId) => {
   try {
+    console.log(`[Main][IPC] get-company-name (${companyId})`);
     const transactions = await getTransactions(companyId);
     return transactions || []; // Return an empty array if no transactions exist
   } catch (error) {
-    console.error(`Error fetching transactions for company ID ${companyId}:`, error);
+    console.error(`[Main][IPC] Error fetching transactions for company ID ${companyId}:`, error);
     throw error;
   }
 });
 
 ipcMain.handle('get-accounts', async (event, companyId) => {
   try {
+    console.log(`[Main][IPC] get-accounts for (${companyId})`);
     return await getAccounts(companyId); // Function to fetch accounts
   } catch (error) {
-    console.error('Error fetching accounts:', error);
+    console.error('[Main][IPC] Error fetching accounts:', error);
     throw error;
   }
 });
 
 ipcMain.handle('get-last-transaction', async (event, companyId) => {
   try {
+    console.log(`[Main][IPC] get-last-transaction for (${companyId})`);
     return await getLastTransaction(companyId);
   } catch (error) {
-    console.error('Error fetching last transaction:', error);
+    console.error('[Main][IPC] Error fetching last transaction:', error);
     throw error;
   }
 });
 
 ipcMain.handle('search-transaction', async (event, companyId, query) => {
-  console.log(`Searching for transactions in company ${companyId} with query: ${query}`);
+  console.log(`[Main][IPC] Searching for transactions in company ${companyId} with query: ${query}`);
   try {
     return await searchTransaction(companyId, query);
   } catch (error) {
-    console.error('Error searching transaction:' , error);
+    console.error('[Main][IPC] Error searching transaction:' , error);
     throw error;
   }
 });
 
 ipcMain.handle('add-transaction', async (event, companyId, transaction) => {
   try {
-    console.log('Transaction Received in Main Process:', transaction);
+    console.log('[Main][IPC] Transaction Received in Main Process:', transaction);
 
     // Ensure transaction is wrapped in an array
     const transactionsArray = Array.isArray(transaction) ? transaction : [transaction];
 
     const result = await addTransaction(companyId, transactionsArray);
-    console.log('Transaction inserted: ', result)
+    console.log('[Main][IPC] Transaction inserted: ', result)
     return result;
   } catch (error) {
     console.log(error)
-    console.error('Error adding transaction:', error);
+    console.error('[Main][IPC] Error adding transaction:', error);
     throw error;
   }
 });
 
 ipcMain.handle('update-transactions', async (event, companyId, transactions) => {
   try {
-    console.log,('Transactions to be updated: ', transactions)
+    console.log,('[Main][IPC] Transactions to be updated: ', transactions)
     return await updateTransactions(companyId, transactions);
   } catch (error) {
-    console.error('Error updating transactions:', error);
+    console.error('[Main][IPC] Error updating transactions:', error);
     throw error;
   }
 });
 
 ipcMain.handle('delete-transactions', async (event, companyId, transactionIds) => {
   try {
+    console.log,(`[Main][IPC] delete-transactions for ${companyId}`, transactions);
     return await deleteTransactions(companyId, transactionIds);
   } catch (error) {
-    console.error('Error deleting transactions:', error);
+    console.error('[Main][IPC] Error deleting transactions:', error);
     throw error;
   }
 });
 
 ipcMain.handle('delete-company', async (event, companyId) => {
   try {
+    console.log(`[Main][IPC] delete-company ${companyId}`);
     return await deleteCompany(companyId);
   } catch(error) {
-    console.error('Error deleting company:', error);
+    console.error('[Main][IPC] Error deleting company:', error);
     throw error;
   }
 })
 
 ipcMain.handle('add-account', async (event, companyId, accountCode, accountName, accountType) => {
   try {
-    console.log('accountCode:',accountCode)
+    console.log('[Main][IPC] accountCode:',accountCode);
     return await addAccount(companyId, accountCode, accountName, accountType);
   } catch (error) {
-    console.error('Error adding account: ', error);
+    console.error('[Main][IPC] Error adding account: ', error);
     return { success: false, message: error.message};
   }
 })
@@ -300,19 +319,21 @@ function getActiveCompanyWindow() {
 
 ipcMain.handle('update-accounts', async (event, companyId, accounts) => {
   try {
-      return await updateAccounts(companyId, accounts);
+    console.log('[Main][IPC] update account: ', accounts);
+    return await updateAccounts(companyId, accounts);
   } catch (error) {
-      console.error('Error updating accounts:', error);
-      throw error;
+    console.error('[Main][IPC] Error updating accounts:', error);
+    throw error;
   }
 });
 
 ipcMain.handle('delete-account', async (event, companyId, accountCode) => {
   try {
-      return await deleteAccount(companyId, accountCode);
+    console.log('[Main][IPC] delete account: ', accountCode)
+    return await deleteAccount(companyId, accountCode);
   } catch (error) {
-      console.error('Error deleting account:', error);
-      throw error;
+    console.error('[Main][IPC] Error deleting account:', error);
+    throw error;
   }
 });
 
@@ -330,27 +351,87 @@ ipcMain.handle('get-active-company-id', (event) => {
   return null;
 });
 
+ipcMain.handle('get-profit-loss-summary', async (event, companyId) => {
+  const accounts = await getAccounts(companyId);
+  const transactions = await getTransactions(companyId);
+
+  const allAccounts = accounts.map(account => {
+    const tx = transactions.filter(t => t.account_code === account.account_code);
+    const totalDebit = tx.reduce((sum, t) => sum + (t.debit || 0), 0);
+    const totalCredit = tx.reduce((sum, t) => sum + (t.credit || 0), 0);
+    const reBalance = totalCredit - totalDebit;
+
+    return {
+      account_code: account.account_code,
+      account_name: account.account_name,
+      account_type: account.account_type,
+      totalDebit: reBalance > 0 ? 0 : reBalance,
+      totalCredit: reBalance > 0 ? reBalance : 0
+    };
+  });
+
+  const report = {
+    sales: [],
+    costOfSales: [],
+    expenses: [],
+    profitLoss: [],
+    totals: { sales: 0, costOfSales: 0, expenses: 0, profitLoss: 0 }
+  };
+
+  allAccounts.forEach(account => {
+    switch (account.account_type) {
+      case 'Sales':
+        report.sales.push(account);
+        report.totals.sales += account.totalCredit + account.totalDebit;
+        break;
+      case 'Cost of Sale':
+        report.costOfSales.push(account);
+        report.totals.costOfSales += account.totalCredit + account.totalDebit;
+        break;
+      case 'Expense':
+        report.expenses.push(account);
+        report.totals.expenses += account.totalCredit + account.totalDebit;
+        break;
+      case 'Profit & Loss':
+        report.profitLoss.push(account);
+        report.totals.profitLoss += account.totalCredit + account.totalDebit;
+        break;
+    }
+  });
+
+  report.totals.grossProfit = report.totals.sales + report.totals.costOfSales;
+  report.totals.finalProfit = report.totals.grossProfit + report.totals.expenses;
+  report.totals.plCarriedForward = report.totals.finalProfit + report.totals.profitLoss;
+
+  console.log('[Main][IPC] profit loss sumarry generated');
+
+  return report;
+});
+
 // Handle IPC request to open Profit & Loss window
 ipcMain.on('fetch-company-id', (event, companyId) => {
+  console.log('[Main][IPC] profitlossWin');
   createProfitLossWindow(companyId);
 });
 
 ipcMain.on('open-add-transaction-window', (event, companyId) => {
+  console.log('[Main][IPC] addtransactionWin');
   addTransactionWindow(companyId);
 });
 
 ipcMain.on('open-add-company-window', () => {
+  console.log('[Main][IPC] addCompanyWin');
   createAddCompanyWindow();
 });
 
 
 ipcMain.on('open-edit-transaction-window', (event, companyId, transactionNo) => {
-  console.log("Received request to open Edit Transaction Window for:", companyId, "Transaction No:", transactionNo);
+  console.log("[Main][IPC] Received request to open Edit Transaction Window for:", companyId, "Transaction No:", transactionNo);
   createEditTransactionWindow(companyId, transactionNo);
 });
 
 ipcMain.on('refresh-page', (event, companyId) => {
-  console.log("Refreshing all windows for company ID:", companyId);
+  console.log("[Main][IPC] Refreshing all windows for company ID:", companyId);
 
   if (companyWindows[companyId]) {
       companyWindows[companyId].forEach(win => {
@@ -359,7 +440,7 @@ ipcMain.on('refresh-page', (event, companyId) => {
           }
       });
   } else {
-      console.error("No open windows found for company ID:", companyId);
+      console.error("[Main][IPC] No open windows found for company ID:", companyId);
   }
 });
 
@@ -369,10 +450,11 @@ ipcMain.on('export-trial-balance-csv', async (event, report) => {
       const filePath = await showSaveDialog('TrialBalance.csv');
       if (filePath) {
           fs.writeFileSync(filePath, csvData);
+          console.log('[Main][IPC] export-trial-balance-csv');
           dialog.showMessageBoxSync({ type: 'info', message: 'Export successful!' });
       }
   } catch (error) {
-      console.error('Error exporting Trial Balance CSV:', error);
+      console.error('[Main][IPC] Error exporting Trial Balance CSV:', error);
       dialog.showMessageBoxSync({ type: 'error', message: 'Export failed.' });
   }
 });
@@ -514,7 +596,15 @@ const menuTemplate = [
     label: 'File',
     submenu: [
       {
-        label: 'New Company',
+        label: 'Carry Foward',
+        click: () => {
+          const companyWindow = getActiveCompanyWindow();
+          if (companyWindow) {
+            companyWindow.webContents.send('initiate-carry-forward-to-new-company');
+          } else {
+            console.error('No active company window for carry forward')
+          }
+        }
       },
       {
         label: 'Open',
@@ -638,7 +728,7 @@ app.whenReady().then(() => {
   const menu = Menu.buildFromTemplate(menuTemplate);
   Menu.setApplicationMenu(menu);
 
-  console.log('App is ready')
+  console.log('[Main] App ready');
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -648,6 +738,7 @@ app.whenReady().then(() => {
 }); 
 
 app.on('window-all-closed', () => {
+  console.log('[Main] all windows closed')
   if (isMac) {
     app.quit()
   }
