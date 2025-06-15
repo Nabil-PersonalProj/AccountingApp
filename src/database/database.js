@@ -354,6 +354,7 @@ function initializeAccountsDatabase(dbPath) {
 
 async function getAccounts(companyId) {
   return new Promise(async (resolve, reject) => {
+    console.log('[database][AccountDb] get accounts');
     try {
       const { accountsDbPath, transactionsDbPath } = await getCompanyDbPath(companyId);
       if (!accountsDbPath || !transactionsDbPath) {
@@ -416,6 +417,7 @@ async function getAccounts(companyId) {
 
 function addAccount(companyId, accountCode, accountName, accountType) {
   return new Promise(async (resolve, reject) => {
+    console.log('[database][AccountDb] add account');
     try{
       const {accountsDbPath} = await getCompanyDbPath(companyId);
       const db = new sqlite3.Database(accountsDbPath);
@@ -435,6 +437,7 @@ function addAccount(companyId, accountCode, accountName, accountType) {
 // Update Multiple Accounts
 function updateAccounts(companyId, accounts) {
   return new Promise(async (resolve, reject) => {
+      console.log('[database][AccountDb] update account');
       try {
           const { accountsDbPath } = await getCompanyDbPath(companyId);
           const db = new sqlite3.Database(accountsDbPath);
@@ -459,6 +462,7 @@ function updateAccounts(companyId, accounts) {
 // Delete an Account
 function deleteAccount(companyId, accountCode) {
   return new Promise(async (resolve, reject) => {
+      console.log('[database][AccountDb] delete Account');
       try {
           const { accountsDbPath } = await getCompanyDbPath(companyId);
           const db = new sqlite3.Database(accountsDbPath);

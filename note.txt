@@ -93,7 +93,7 @@ task 2.4:
 task 2.5:
   import
   export balance sheet
-  check on the database local save where??
+  check on the database local save where(done)
   carry forward function
 
 
