@@ -1,5 +1,6 @@
 // Wait for the DOM content to load
 window.addEventListener('DOMContentLoaded', () => {
+  console.log('[companyRenderer] loaded');
   // Retrieve all relevant DOM elements
   const tabs = document.querySelectorAll('.tab-button');
   const sections = document.querySelectorAll('.tab-content');
@@ -17,6 +18,7 @@ window.addEventListener('DOMContentLoaded', () => {
   ////////////////////////////////////////// Load Company Data //////////////////////////////////////////
   window.api.loadTransactions(async (companyId) => {
     try {
+      console.log('[companyRenderer]loading transactions');
       currentCompanyId = companyId;
       const companyName = await window.api.getCompanyName(companyId);
       updateTitle(companyName);
@@ -40,7 +42,7 @@ window.addEventListener('DOMContentLoaded', () => {
   
   // Load the main tab with the latest transactions
   function loadMainTab(transactions) {
-    console.log("loading main tab");
+    console.log("[companyRenderer] loading main tab");
     if (!transactions || transactions.length === 0) {
       transactionBody.innerHTML = '<tr><td colspan="6">No transactions available.</td></tr>';
       return;
@@ -65,7 +67,7 @@ window.addEventListener('DOMContentLoaded', () => {
   
   // Load all transactions into the Transactions tab
   function loadTransactionsTab(transactions) {
-    console.log("loading transaction tab");
+    console.log("[companyRenderer] loading transaction tab");
     const transactionsBody = document.getElementById('transactions-body');
     if (!transactions || transactions.length === 0) {
       transactionsBody.innerHTML = '<tr><td colspan="6">No transactions available.</td></tr>';
@@ -109,7 +111,7 @@ window.addEventListener('DOMContentLoaded', () => {
   
     // Load accounts data into the All Accounts tab
     async function loadAccountsTab(companyId) {
-      console.log("loading accounts tab");
+      console.log("[companyRenderer] loading accounts tab");
       try {
         console.log("Getting company ID:", companyId);
         const accounts = await window.api.getAccounts(companyId);
@@ -173,6 +175,7 @@ window.addEventListener('DOMContentLoaded', () => {
   
     // Refresh all tabs
     async function refresh(companyId) {
+      console.log('[companyRenderer] refresh');
       const transactions = await window.api.getTransactions(companyId);
       loadMainTab(transactions);
       loadTransactionsTab(transactions);
@@ -205,7 +208,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
     searchTransactionBtn.addEventListener('click', async () => {
-        console.log('Search button clicked');
+        console.log('[companyRenderer][search] Search button clicked');
         const searchQuery = transactionSearch.value.trim();
 
         if (!currentCompanyId) {
@@ -263,6 +266,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     ///////////////////////////// Open Add & Edit Transaction Windows /////////////////////////////
     addTransactionBtn.addEventListener('click', () => {
+      console.log('[companyRenderer][OpenAddTransaction]');
       if (!currentCompanyId) {
         window.api.showMessage('No company selected. Please select a company first.');
         return;
@@ -271,6 +275,7 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   
     editTransactionBtn.addEventListener('click', async () => {
+      console.log('[companyRenderer][OpenEditTransaction]');
       const transactionNoText = document.getElementById('last-transaction-no').textContent.replace('Last Transaction No: ', '').trim();
       const searchTransactionNo = document.getElementById('transactionSearch').value.trim();
       const transactionNo = searchTransactionNo ? parseInt(searchTransactionNo) : parseInt(transactionNoText);
@@ -287,23 +292,23 @@ window.addEventListener('DOMContentLoaded', () => {
   
     ///////////////////////////// APIS /////////////////////////////
     window.api.receive('refresh-transactions', (companyId) => {
-      console.log("Refreshing transactions for company ID:", companyId);
+      console.log("[companyRenderer][API] Refreshing transactions for company ID:", companyId);
       refresh(companyId);
     });
 
     window.api.onOpenAddTransaction(() => {
-        console.log('Menu: Open Add Transaction Modal');
+        console.log('[companyRenderer][API] Menu: Open Add Transaction Modal');
         addTransactionBtn.click();
     });
       
     window.api.onOpenEditTransaction(() => {
-        console.log('Menu: Open Edit Transaction Modal');
+        console.log('[companyRenderer][API] Menu: Open Edit Transaction Modal');
         editTransactionBtn.click();
     });
     
     window.api.receive('request-company-id', () => {
         if (currentCompanyId) {
-          console.log("Sending company ID to main process:", currentCompanyId);
+          console.log("[companyRenderer][API] Sending company ID to main process:", currentCompanyId);
           window.api.send('fetch-company-id', currentCompanyId);
         } else {
           console.error("No company ID found.");
@@ -315,7 +320,8 @@ window.addEventListener('DOMContentLoaded', () => {
       if (!currentCompanyId) {
         return window.api.showMessage('No active company to carry forward from.');
       }
-    
+
+      console.log("[companyRenderer][Carry Forward] Initiating Carry Forward");
       isCarryForwardToNewCompany = true;
       carryForwardSourceCompanyId = currentCompanyId;
     
@@ -325,18 +331,18 @@ window.addEventListener('DOMContentLoaded', () => {
 
     window.api.receive('carry-forward-after-company-created', async (newCompanyId) => {
       if (!isCarryForwardToNewCompany || !carryForwardSourceCompanyId) {
-        console.log("[Carry Forward] Not triggered via carry forward flow.");
+        console.log("[companyRenderer][Carry Forward] Not triggered via carry forward flow.");
         return; // This wasn't a carry forward operation
       }
     
       try {
-        console.log(`[Carry Forward] Starting from company ID: ${carryForwardSourceCompanyId} to new company ID: ${newCompanyId}`);
+        console.log(`[companyRenderer][Carry Forward] Starting from company ID: ${carryForwardSourceCompanyId} to new company ID: ${newCompanyId}`);
         const [sourceAccounts, plReport] = await Promise.all([
           window.api.getAccounts(carryForwardSourceCompanyId),
           window.api.getProfitLossSummary(carryForwardSourceCompanyId)
         ]);
 
-        console.log("[Carry Forward] Accounts and P&L Report fetched.");
+        console.log("[companyRenderer][Carry Forward] Accounts and P&L Report fetched.");
     
         const plAccountsToCarry = plReport.profitLoss.filter(a =>
           parseFloat(a.totalDebit || 0) !== 0 || parseFloat(a.totalCredit || 0) !== 0
@@ -350,17 +356,17 @@ window.addEventListener('DOMContentLoaded', () => {
           account_type: acc.account_type
         }));
 
-        console.log(`[Carry Forward] Cloning ${clonedAccounts.length} accounts.`);
+        console.log(`[companyRenderer][Carry Forward] Cloning ${clonedAccounts.length} accounts.`);
     
         // Step 1: Create all accounts in the new company
         for (const acc of clonedAccounts) {
-          console.log(`[Carry Forward] Adding account: ${acc.account_code}`);
+          console.log(`[companyRenderer][Carry Forward] Adding account: ${acc.account_code}`);
           await window.api.addAccount(newCompanyId, acc.account_code, acc.account_name, acc.account_type);
         }
     
         // Step 2: Prepare carry forward transaction
         const carryForwardTransaction = plAccountsToCarry.map(account => {
-          console.log(`[Carry Forward] Preparing transaction for ${account.account_code} with balance ${balance}`);
+          console.log(`[companyRenderer][Carry Forward] Preparing transaction for ${account.account_code} with balance ${balance}`);
           const balance = (account.totalCredit || 0) - (account.totalDebit || 0);
           return {
             transaction_no: 1,
@@ -372,14 +378,14 @@ window.addEventListener('DOMContentLoaded', () => {
           };
         });
         
-        console.log("[Carry Forward] Adding initial transaction...");
+        console.log("[companyRenderer][Carry Forward] Adding initial transaction...");
         await window.api.addTransaction(newCompanyId, carryForwardTransaction);
 
-        console.log("[Carry Forward] Success! Opening new company...");
+        console.log("[companyRenderer][Carry Forward] Success! Opening new company...");
         window.api.showMessage("Carry forward completed and new company initialized!");
     
       } catch (err) {
-        console.error("[Carry Forward] Error:", err);
+        console.error("[companyRenderer][Carry Forward] Error:", err);
         window.api.showMessage("An error occurred while carrying forward to new company.");
       } finally {
         // Reset the flags
