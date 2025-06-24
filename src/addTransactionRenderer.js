@@ -3,7 +3,7 @@ let currentCompanyId = null; // Store the company ID
 // Receive company ID and initialize the add transaction window
 window.api.receive('initialize-add-transaction', async (companyId) => {
     try {
-        console.log('[addTransactionRenderer] Initializing Add Transaction Window for Company ID:', companyId);
+        window.logging.info('[addTransactionRenderer] Initializing Add Transaction Window for Company ID:', companyId);
         currentCompanyId = companyId;
 
         // Get DOM elements safely
@@ -12,7 +12,7 @@ window.api.receive('initialize-add-transaction', async (companyId) => {
         const warningElement = document.getElementById('addBalanceWarning');
 
         if (!transactionNoElement || !transactionDateElement) {
-            console.error("Error: Missing required form elements.");
+            window.logging.error("[addTransactionRenderer] Error: Missing required form elements.");
             return;
         }
 
@@ -33,14 +33,14 @@ window.api.receive('initialize-add-transaction', async (companyId) => {
             warningElement.style.display = 'none';
         }
     } catch (error) {
-        console.error('Error initializing transaction window:', error);
+        window.logging.error('[addTransactionRenderer]Error initializing transaction window:', error);
     }
 });
 
 // Add a new row to the transactions table
 async function addTransactionRow() {
     if (!currentCompanyId) {
-        console.error("Company ID is missing.");
+        window.logging.error("[addTransactionRenderer] Company ID is missing.");
         return;
     }
 
@@ -73,7 +73,7 @@ async function fetchAccountCodes(companyId) {
         const accounts = await window.api.getAccounts(companyId);
         return accounts.map(a => a.account_code);
     } catch (error) {
-        console.error("Error fetching account codes:", error);
+        window.logging.error("[addTransactionRenderer] Error fetching account codes:", error);
         return [];
     }
 }
@@ -91,7 +91,7 @@ document.addEventListener('click', (event) => {
 // Save transactions from the form
 document.getElementById('saveTransactionBtn').addEventListener('click', async () => {
     if (!currentCompanyId) {
-        console.error("Company ID is missing.");
+        window.logging.error("[addTransactionRenderer] Company ID is missing.");
         return;
     }
 
@@ -100,7 +100,7 @@ document.getElementById('saveTransactionBtn').addEventListener('click', async ()
     const warningElement = document.getElementById('addBalanceWarning');
 
     if (!transactionNoElement || !transactionDateElement) {
-        console.error("Error: Missing required form elements.");
+        window.logging.error("[addTransactionRenderer] Error: Missing required form elements.");
         return;
     }
 
@@ -158,7 +158,7 @@ document.getElementById('saveTransactionBtn').addEventListener('click', async ()
 
         window.close();
     } catch (error) {
-        console.error('Error saving transactions:', error);
+        window.logging.error('[addTransactionRenderer] Error saving transactions:', error);
         window.api.showMessage('Failed to save transactions.');
     }
 });

@@ -8,7 +8,7 @@ saveCompanyBtn.addEventListener('click', async () => {
     window.api.showMessage('Company name is required!');
     return;
   }
-  console.log('[addCompanyRenderer] adding: ', name);
+  window.logging.info('[addCompanyRenderer] adding: ', name);
 
   try {
     const response = await window.api.addCompany(name);
@@ -21,14 +21,14 @@ saveCompanyBtn.addEventListener('click', async () => {
     
     //  If part of a carry forward flow, notify the main window
     if (response.newCompanyId) {
-      console.log('[addCompanyRenderer] initiating next part of carry forward');
+      window.logging.info('[addCompanyRenderer] initiating next part of carry forward');
       window.api.send('carry-forward-after-company-created', response.newCompanyId);
     }
     
     window.api.send('refresh-companies');
     window.close();
   } catch (error) {
-    console.error('Error adding company:', error);
+    window.logging.error('Error adding company:', error);
     window.api.showMessage('Failed to add company.');
   }
 });

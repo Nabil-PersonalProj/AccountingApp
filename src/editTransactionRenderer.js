@@ -5,10 +5,10 @@ let originalTransactionSnapshot = [];
 // Receive the transaction number and load data
 window.api.receive('initialize-edit-transaction', async (companyId, txnNo) => {
     try {
-        console.log('🚀[editTransactionRenderer] Received Edit Request for Company ID:', companyId, 'Transaction No:', txnNo);
+        window.logging.info('[editTransactionRenderer] Received Edit Request for Company ID:', companyId, 'Transaction No:', txnNo);
 
         if (!txnNo || isNaN(txnNo)) {
-            console.error("❌ Invalid Transaction No received in Edit Window:", txnNo);
+            window.logging.error("[editTransactionRenderer] Invalid Transaction No received in Edit Window:", txnNo);
             window.api.showMessage("Invalid transaction number received. Please try again.");
             return;
         }
@@ -19,11 +19,11 @@ window.api.receive('initialize-edit-transaction', async (companyId, txnNo) => {
         document.getElementById('editTransactionNo').textContent = txnNo;
 
         const transactions = await window.api.getTransactions(companyId);
-        console.log("📄 Transactions fetched from DB:", transactions);
+        window.logging.info("[editTransactionRenderer] Transactions fetched from DB:", transactions);
 
         // **Filter transactions by the transaction number**
         const filteredTransactions = transactions.filter(t => Number(t.transaction_no) === Number(txnNo));
-        console.log("🔍 Filtered Transactions:", filteredTransactions);
+        window.logging.info("[editTransactionRenderer] Filtered Transactions:", filteredTransactions);
 
         if (filteredTransactions.length === 0) {
             console.warn('❌ No transactions found for Transaction No:', txnNo);
@@ -36,7 +36,7 @@ window.api.receive('initialize-edit-transaction', async (companyId, txnNo) => {
         document.getElementById('editTransactionDate').value = filteredTransactions[0].date;
         populateEditTable(filteredTransactions);
     } catch (error) {
-        console.error('Error initializing edit transaction window:', error);
+        window.logging.error('[editTransactionRenderer] Error initializing edit transaction window:', error);
     }
 });
 
@@ -45,14 +45,14 @@ async function fetchAccountCodes(companyId) {
       const accounts = await window.api.getAccounts(companyId);
       return accounts.map(a => a.account_code);
     } catch (error) {
-      console.error("Error fetching account codes:", error);
+      window.logging.error("[editTransactionRenderer] Error fetching account codes:", error);
       return [];
     }
   }
 
 // ** Populate the edit transaction table **
 async function populateEditTable(transactions) {
-    console.log("Populating Edit Table with:", transactions);
+    window.logging.info("[editTransactionRenderer] Populating Edit Table with:", transactions);
     const tableBody = document.getElementById('editTransactionRows');
     tableBody.innerHTML = '';
 
@@ -119,7 +119,7 @@ document.addEventListener('click', (event) => {
 
 // ** Save edited transactions **
 document.getElementById('saveEditTransactionBtn').addEventListener('click', async () => {
-    console.log("🔄 Save button clicked - Processing update...");
+    window.logging.info("[editTransactionRenderer] Save button clicked - Processing update...");
 
     const rows = Array.from(document.querySelectorAll('#editTransactionRows tr'));
     const selectedDate = document.getElementById('editTransactionDate').value;
@@ -147,7 +147,7 @@ document.getElementById('saveEditTransactionBtn').addEventListener('click', asyn
         };
     });
 
-    console.log("📝 Updated Transactions:", updatedTransactions);
+    window.logging.info("[editTransactionRenderer] Updated Transactions:", updatedTransactions);
 
     // Validate that total debits and credits match
     const totalDebit = updatedTransactions.reduce((sum, t) => sum + t.debit, 0);
@@ -164,7 +164,7 @@ document.getElementById('saveEditTransactionBtn').addEventListener('click', asyn
         warningElement.style.display = 'none';
     }
 
-    console.log("✅ Balance check passed, proceeding with update...");
+    window.logging.info("[editTransactionRenderer] Balance check passed, proceeding with update...");
 
     // Categorize transactions: added, modified, and deleted
     const modifiedTransactions = [];
@@ -211,14 +211,14 @@ document.getElementById('saveEditTransactionBtn').addEventListener('click', asyn
         if (deletedTransactions.length > 0) {
             await window.api.deleteTransactions(currentCompanyId, deletedTransactions);
         }
-        console.log("✅ Transaction update successful!");
+        window.logging.info("[editTransactionRenderer] Transaction update successful!");
 
         window.api.showMessage('Transactions updated successfully!');
         window.api.send('transaction-added', currentCompanyId);
         window.api.send('refresh-page', currentCompanyId);
         window.close();
     } catch (error) {
-        console.error("❌ Error saving transactions:", error);
+        window.logging.error("[editTransactionRenderer] Error saving transactions:", error);
         window.api.showMessage('Failed to save transactions.');
     }
 });

@@ -3,14 +3,14 @@ let currentCompanyId = null;
 window.api.receive('load-profit-loss', async (companyId) => {
     currentCompanyId = companyId;
     try {
-        console.log("Loading Profit & Loss for Company ID:", companyId);
+        window.logging.info("[ProfitLossRenderer] Loading Profit & Loss for Company ID:", companyId);
 
         // Fetch all accounts and transactions
         const accounts = await window.api.getAccounts(companyId);
         const transactions = await window.api.getTransactions(companyId);
 
-        // console.log("Fetched Accounts:", accounts);
-        // console.log("Fetched Transactions:", transactions);
+        // window.logging.info("Fetched Accounts:", accounts);
+        // window.logging.info("Fetched Transactions:", transactions);
         
         const allAccounts = accounts.map(account => {
             const accountTransations = transactions.filter(t => t.account_code === account.account_code);
@@ -37,7 +37,7 @@ window.api.receive('load-profit-loss', async (companyId) => {
             };
         })
 
-        console.log("All accounts table: ", allAccounts);
+        window.logging.info("[ProfitLossRenderer] All accounts table: ", allAccounts);
 
         const report = {
             sales: [],
@@ -84,13 +84,13 @@ window.api.receive('load-profit-loss', async (companyId) => {
         report.totals.plCarriedForward = report.totals.finalProfit + report.totals.profitLoss;
 
         // Log calculated values for debugging
-        console.log("📊 Sales:", report.totals.sales);
-        console.log("📊 Cost of Sales:", report.totals.costOfSales);
-        console.log("📊 Gross Profit:", report.totals.grossProfit);
-        console.log("📊 Expenses:", report.totals.expenses);
-        console.log("📊 Final Profit:", report.totals.finalProfit);
-        console.log("📊 Profit & Loss (Brought Down):", report.totals.profitLoss);
-        console.log("📊 P&L Carried Forward:", report.totals.plCarriedForward);
+        window.logging.info("[ProfitLossRenderer] Sales:", report.totals.sales);
+        window.logging.info("[ProfitLossRenderer] Cost of Sales:", report.totals.costOfSales);
+        window.logging.info("[ProfitLossRenderer] Gross Profit:", report.totals.grossProfit);
+        window.logging.info("[ProfitLossRenderer] Expenses:", report.totals.expenses);
+        window.logging.info("[ProfitLossRenderer] Final Profit:", report.totals.finalProfit);
+        window.logging.info("[ProfitLossRenderer] Profit & Loss (Brought Down):", report.totals.profitLoss);
+        window.logging.info("[ProfitLossRenderer] P&L Carried Forward:", report.totals.plCarriedForward);
 
         function formatAmount(value) {
             if (value < 0) {
@@ -155,7 +155,7 @@ window.api.receive('load-profit-loss', async (companyId) => {
         plBody.appendChild(plCarriedForwardRow);
 
     } catch (error) {
-        console.error("Error loading Profit & Loss report:", error);
+        console.error("[ProfitLossRenderer] Error loading Profit & Loss report:", error);
     }
 });
 
@@ -241,7 +241,7 @@ window.api.receive('request-export-profit-loss', async () => {
         // Send processed data to main process for export
         window.api.send('export-profit-loss-csv', report);
     } catch (error) {
-        console.error("Error exporting Profit & Loss:", error);
+        console.error("[ProfitLossRenderer] Error exporting Profit & Loss:", error);
         window.api.showMessage("Export failed.");
     }
 });
