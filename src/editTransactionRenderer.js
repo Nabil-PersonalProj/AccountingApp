@@ -5,7 +5,7 @@ let originalTransactionSnapshot = [];
 // Receive the transaction number and load data
 window.api.receive('initialize-edit-transaction', async (companyId, txnNo) => {
     try {
-        console.log('🚀 Received Edit Request for Company ID:', companyId, 'Transaction No:', txnNo);
+        console.log('🚀[editTransactionRenderer] Received Edit Request for Company ID:', companyId, 'Transaction No:', txnNo);
 
         if (!txnNo || isNaN(txnNo)) {
             console.error("❌ Invalid Transaction No received in Edit Window:", txnNo);

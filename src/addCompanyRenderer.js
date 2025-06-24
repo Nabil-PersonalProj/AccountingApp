@@ -8,6 +8,7 @@ saveCompanyBtn.addEventListener('click', async () => {
     window.api.showMessage('Company name is required!');
     return;
   }
+  console.log('[addCompanyRenderer] adding: ', name);
 
   try {
     const response = await window.api.addCompany(name);
@@ -15,9 +16,12 @@ saveCompanyBtn.addEventListener('click', async () => {
       window.api.showMessage(response.message);
       return;
     }
+
+    window.api.send('log-to-console', `[AddCompanyRenderer] Test`);
     
     //  If part of a carry forward flow, notify the main window
     if (response.newCompanyId) {
+      console.log('[addCompanyRenderer] initiating next part of carry forward');
       window.api.send('carry-forward-after-company-created', response.newCompanyId);
     }
     

@@ -3,7 +3,7 @@ let currentCompanyId = null; // Store the company ID
 // Receive company ID and initialize the add transaction window
 window.api.receive('initialize-add-transaction', async (companyId) => {
     try {
-        console.log('Initializing Add Transaction Window for Company ID:', companyId);
+        console.log('[addTransactionRenderer] Initializing Add Transaction Window for Company ID:', companyId);
         currentCompanyId = companyId;
 
         // Get DOM elements safely

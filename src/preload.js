@@ -33,3 +33,9 @@ contextBridge.exposeInMainWorld('api', {
     receive: (channel, callback) => ipcRenderer.on(channel, (_, data1, data2) => callback(data1, data2)),
     send: (channel, data) => ipcRenderer.send(channel, data),
 });
+
+contextBridge.exposeInMainWorld('logging', {
+  info: (msg) => ipcRenderer.send('log-info', msg),
+  warn: (msg) => ipcRenderer.send('log-warn', msg),
+  error: (msg) => ipcRenderer.send('log-error', msg),
+});

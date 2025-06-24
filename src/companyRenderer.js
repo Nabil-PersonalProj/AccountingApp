@@ -1,6 +1,6 @@
 // Wait for the DOM content to load
 window.addEventListener('DOMContentLoaded', () => {
-  console.log('[companyRenderer] loaded');
+  window.logging.info('[companyRenderer] loaded');
   // Retrieve all relevant DOM elements
   const tabs = document.querySelectorAll('.tab-button');
   const sections = document.querySelectorAll('.tab-content');
@@ -18,7 +18,7 @@ window.addEventListener('DOMContentLoaded', () => {
   ////////////////////////////////////////// Load Company Data //////////////////////////////////////////
   window.api.loadTransactions(async (companyId) => {
     try {
-      console.log('[companyRenderer]loading transactions');
+      window.logging.info('[companyRenderer]loading transactions');
       currentCompanyId = companyId;
       const companyName = await window.api.getCompanyName(companyId);
       updateTitle(companyName);
@@ -30,7 +30,7 @@ window.addEventListener('DOMContentLoaded', () => {
   
       setupTabNavigation();
     } catch (error) {
-      console.error('Error loading data:', error);
+      window.logging.error('Error loading data:', error);
       window.api.showMessage('An error occurred while loading company data. Please refresh the page.');
     }
   });
@@ -42,7 +42,7 @@ window.addEventListener('DOMContentLoaded', () => {
   
   // Load the main tab with the latest transactions
   function loadMainTab(transactions) {
-    console.log("[companyRenderer] loading main tab");
+    window.logging.info("[companyRenderer] loading main tab");
     if (!transactions || transactions.length === 0) {
       transactionBody.innerHTML = '<tr><td colspan="6">No transactions available.</td></tr>';
       return;
@@ -67,7 +67,7 @@ window.addEventListener('DOMContentLoaded', () => {
   
   // Load all transactions into the Transactions tab
   function loadTransactionsTab(transactions) {
-    console.log("[companyRenderer] loading transaction tab");
+    window.logging.info("[companyRenderer] loading transaction tab");
     const transactionsBody = document.getElementById('transactions-body');
     if (!transactions || transactions.length === 0) {
       transactionsBody.innerHTML = '<tr><td colspan="6">No transactions available.</td></tr>';
@@ -111,9 +111,9 @@ window.addEventListener('DOMContentLoaded', () => {
   
     // Load accounts data into the All Accounts tab
     async function loadAccountsTab(companyId) {
-      console.log("[companyRenderer] loading accounts tab");
+      window.logging.info("[companyRenderer] loading accounts tab");
       try {
-        console.log("Getting company ID:", companyId);
+        window.logging.info("Getting company ID:", companyId);
         const accounts = await window.api.getAccounts(companyId);
         const accountsBody = document.getElementById('accounts-body');
   
@@ -154,7 +154,7 @@ window.addEventListener('DOMContentLoaded', () => {
         document.getElementById('final-account-debit').textContent = totalAccountDebit.toFixed(2);
         document.getElementById('final-account-credit').textContent = totalAccountCredit.toFixed(2);
       } catch (error) {
-        console.error('Error loading accounts:', error);
+        window.logging.error('Error loading accounts:', error);
       }
     }
 
@@ -175,7 +175,7 @@ window.addEventListener('DOMContentLoaded', () => {
   
     // Refresh all tabs
     async function refresh(companyId) {
-      console.log('[companyRenderer] refresh');
+      window.logging.info('[companyRenderer] refresh');
       const transactions = await window.api.getTransactions(companyId);
       loadMainTab(transactions);
       loadTransactionsTab(transactions);
@@ -208,11 +208,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
     searchTransactionBtn.addEventListener('click', async () => {
-        console.log('[companyRenderer][search] Search button clicked');
+        window.logging.info('[companyRenderer][search] Search button clicked');
         const searchQuery = transactionSearch.value.trim();
 
         if (!currentCompanyId) {
-        console.error('Company ID is not loaded yet.');
+        window.logging.error('Company ID is not loaded yet.');
         return;
         }
 
@@ -221,7 +221,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const transactions = await window.api.searchTransaction(currentCompanyId, searchQuery);
             displayTransactionDetails(transactions);
         } catch (error) {
-            console.error('Error fetching transactions:', error);
+            window.logging.error('Error fetching transactions:', error);
             window.api.showMessage('An error occurred while searching for transactions. Please try again.');
         }
         } else {
@@ -266,7 +266,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     ///////////////////////////// Open Add & Edit Transaction Windows /////////////////////////////
     addTransactionBtn.addEventListener('click', () => {
-      console.log('[companyRenderer][OpenAddTransaction]');
+      window.logging.info('[companyRenderer][OpenAddTransaction]');
       if (!currentCompanyId) {
         window.api.showMessage('No company selected. Please select a company first.');
         return;
@@ -275,12 +275,12 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   
     editTransactionBtn.addEventListener('click', async () => {
-      console.log('[companyRenderer][OpenEditTransaction]');
+      window.logging.info('[companyRenderer][OpenEditTransaction]');
       const transactionNoText = document.getElementById('last-transaction-no').textContent.replace('Last Transaction No: ', '').trim();
       const searchTransactionNo = document.getElementById('transactionSearch').value.trim();
       const transactionNo = searchTransactionNo ? parseInt(searchTransactionNo) : parseInt(transactionNoText);
   
-      console.log("🚀 Sending Edit Request for Transaction No:", transactionNo);
+      window.logging.info("🚀 Sending Edit Request for Transaction No:", transactionNo);
   
       if (!transactionNo || isNaN(transactionNo)) {
         window.api.showMessage('No transactions available to edit.');
@@ -292,26 +292,26 @@ window.addEventListener('DOMContentLoaded', () => {
   
     ///////////////////////////// APIS /////////////////////////////
     window.api.receive('refresh-transactions', (companyId) => {
-      console.log("[companyRenderer][API] Refreshing transactions for company ID:", companyId);
+      window.logging.info("[companyRenderer][API] Refreshing transactions for company ID:", companyId);
       refresh(companyId);
     });
 
     window.api.onOpenAddTransaction(() => {
-        console.log('[companyRenderer][API] Menu: Open Add Transaction Modal');
+        window.logging.info('[companyRenderer][API] Menu: Open Add Transaction Modal');
         addTransactionBtn.click();
     });
       
     window.api.onOpenEditTransaction(() => {
-        console.log('[companyRenderer][API] Menu: Open Edit Transaction Modal');
+        window.logging.info('[companyRenderer][API] Menu: Open Edit Transaction Modal');
         editTransactionBtn.click();
     });
     
     window.api.receive('request-company-id', () => {
         if (currentCompanyId) {
-          console.log("[companyRenderer][API] Sending company ID to main process:", currentCompanyId);
+          window.logging.info("[companyRenderer][API] Sending company ID to main process:", currentCompanyId);
           window.api.send('fetch-company-id', currentCompanyId);
         } else {
-          console.error("No company ID found.");
+          window.logging.error("No company ID found.");
           window.api.showMessage("No active company selected.");
         }
     });
@@ -321,34 +321,35 @@ window.addEventListener('DOMContentLoaded', () => {
         return window.api.showMessage('No active company to carry forward from.');
       }
 
-      console.log("[companyRenderer][Carry Forward] Initiating Carry Forward");
+      window.logging.info("[companyRenderer][Carry Forward] Initiating Carry Forward");
       isCarryForwardToNewCompany = true;
       carryForwardSourceCompanyId = currentCompanyId;
     
       // Reuse existing flow to open add company window
       window.api.openAddCompanyWindow();
+      window.api.receive('log-to-console', (msg) => {window.logging.info(msg);});
     });
 
     window.api.receive('carry-forward-after-company-created', async (newCompanyId) => {
       if (!isCarryForwardToNewCompany || !carryForwardSourceCompanyId) {
-        console.log("[companyRenderer][Carry Forward] Not triggered via carry forward flow.");
+        window.logging.info("[companyRenderer][Carry Forward] Not triggered via carry forward flow.");
         return; // This wasn't a carry forward operation
       }
     
       try {
-        console.log(`[companyRenderer][Carry Forward] Starting from company ID: ${carryForwardSourceCompanyId} to new company ID: ${newCompanyId}`);
+        window.logging.info(`[companyRenderer][Carry Forward] Starting from company ID: ${carryForwardSourceCompanyId} to new company ID: ${newCompanyId}`);
         const [sourceAccounts, plReport] = await Promise.all([
           window.api.getAccounts(carryForwardSourceCompanyId),
           window.api.getProfitLossSummary(carryForwardSourceCompanyId)
         ]);
 
-        console.log("[companyRenderer][Carry Forward] Accounts and P&L Report fetched.");
+        window.logging.info("[companyRenderer][Carry Forward] Accounts and P&L Report fetched.");
     
         const plAccountsToCarry = plReport.profitLoss.filter(a =>
           parseFloat(a.totalDebit || 0) !== 0 || parseFloat(a.totalCredit || 0) !== 0
         );
 
-        console.log(`[Carry Forward] Found ${plAccountsToCarry.length} P&L accounts to carry.`);
+        window.logging.info(`[Carry Forward] Found ${plAccountsToCarry.length} P&L accounts to carry.`);
     
         const clonedAccounts = sourceAccounts.map(acc => ({
           account_code: acc.account_code,
@@ -356,17 +357,17 @@ window.addEventListener('DOMContentLoaded', () => {
           account_type: acc.account_type
         }));
 
-        console.log(`[companyRenderer][Carry Forward] Cloning ${clonedAccounts.length} accounts.`);
+        window.logging.info(`[companyRenderer][Carry Forward] Cloning ${clonedAccounts.length} accounts.`);
     
         // Step 1: Create all accounts in the new company
         for (const acc of clonedAccounts) {
-          console.log(`[companyRenderer][Carry Forward] Adding account: ${acc.account_code}`);
+          window.logging.info(`[companyRenderer][Carry Forward] Adding account: ${acc.account_code}`);
           await window.api.addAccount(newCompanyId, acc.account_code, acc.account_name, acc.account_type);
         }
     
         // Step 2: Prepare carry forward transaction
         const carryForwardTransaction = plAccountsToCarry.map(account => {
-          console.log(`[companyRenderer][Carry Forward] Preparing transaction for ${account.account_code} with balance ${balance}`);
+          window.logging.info(`[companyRenderer][Carry Forward] Preparing transaction for ${account.account_code} with balance ${balance}`);
           const balance = (account.totalCredit || 0) - (account.totalDebit || 0);
           return {
             transaction_no: 1,
@@ -378,14 +379,14 @@ window.addEventListener('DOMContentLoaded', () => {
           };
         });
         
-        console.log("[companyRenderer][Carry Forward] Adding initial transaction...");
+        window.logging.info("[companyRenderer][Carry Forward] Adding initial transaction...");
         await window.api.addTransaction(newCompanyId, carryForwardTransaction);
 
-        console.log("[companyRenderer][Carry Forward] Success! Opening new company...");
+        window.logging.info("[companyRenderer][Carry Forward] Success! Opening new company...");
         window.api.showMessage("Carry forward completed and new company initialized!");
     
       } catch (err) {
-        console.error("[companyRenderer][Carry Forward] Error:", err);
+        window.logging.error("[companyRenderer][Carry Forward] Error:", err);
         window.api.showMessage("An error occurred while carrying forward to new company.");
       } finally {
         // Reset the flags
@@ -488,7 +489,7 @@ window.addEventListener('DOMContentLoaded', () => {
         refresh(currentCompanyId);
 
       } catch (err) {
-        console.error('Error saving account changes:', err);
+        window.logging.error('Error saving account changes:', err);
         window.api.showMessage('An error occurred. Please try again.');
       }
     });
@@ -562,7 +563,7 @@ window.addEventListener('DOMContentLoaded', () => {
             `
            ).join('');
           } catch (error) {
-            console.error('Error loading accounts:', error);
+            window.logging.error('Error loading accounts:', error);
           }
     }
 
@@ -625,7 +626,7 @@ window.api.receive('request-export-trial-balance', async () => {
     window.api.send('export-trial-balance-csv', report);
 
   } catch (error) {
-    console.error("Error exporting Trial Balance:", error);
+    window.logging.error("Error exporting Trial Balance:", error);
     window.api.showMessage("Export failed.");
   }
 });
@@ -673,7 +674,7 @@ window.api.receive('request-export-transactions', async () => {
     window.api.send('export-transactions-csv', exportRows);
 
   } catch (error) {
-    console.error("Error exporting transactions:", error);
+    window.logging.error("Error exporting transactions:", error);
     window.api.showMessage("Export failed.");
   }
 });

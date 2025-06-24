@@ -19,11 +19,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
 async function loadCompanies() {
   try {
-    console.log('[mainRenderer] loading companies')
+    window.logging.info('[mainRenderer] loading companies')
     const companies = await window.api.getCompanies(); // Use exposed API
     renderCompanyCards(companies);
   } catch (error) {
-    console.error('Error loading companies:', error);
+    window.logging.error('Error loading companies:', error);
   }
 }
 
@@ -39,7 +39,7 @@ function renderCompanyCards(companies) {
   });
   companyList.innerHTML = ''; // Clear only once
   companyList.appendChild(fragment); // Append all at once
-  console.log('[mainRenderer] loading company cards');
+  window.logging.info('[mainRenderer] loading company cards');
 }
 
 // Handle adding a new company
@@ -55,12 +55,12 @@ deleteCompanyBtn.addEventListener('click', async () => {
       `<option value="${company.id}">${company.name}</option>`
     ).join('');
 
-    console.log('[mainRenderer] deleting company');
+    window.logging.info('[mainRenderer] deleting company');
 
     // Show the modal
     deleteCompanyModal.style.display = 'flex';
   } catch (error) {
-    console.error('Error loading companies for deletion:', error);
+    window.logging.error('Error loading companies for deletion:', error);
     alert('Failed to load companies. Please try again.');
   }
 });
@@ -79,7 +79,7 @@ confirmDeleteCompanyBtn.addEventListener('click', async () => {
       deleteCompanyModal.style.display = 'none'; // Hide modal
       loadCompanies(); // Refresh the company list
     } catch (error) {
-      console.error('Error deleting company:', error);
+      window.logging.error('Error deleting company:', error);
       alert('Failed to delete company.');
     }
   }
@@ -132,7 +132,7 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 window.api.receive('refresh-companies', () => {
-  console.log('[mainRenderer] reload companies');
+  window.logging.info('[mainRenderer] reload companies');
   loadCompanies();
 });
 
