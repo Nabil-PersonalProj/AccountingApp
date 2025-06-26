@@ -11,19 +11,13 @@ saveCompanyBtn.addEventListener('click', async () => {
   window.logging.info('[addCompanyRenderer] adding: ', name);
 
   try {
-    const response = await window.api.addCompany(name);
+    const carryForwardFromId = await window.api.getCarryForwardSource();
+    const response = await window.api.addCompany(name, carryForwardFromId || null);
     if (!response.success) {
       window.api.showMessage(response.message);
       return;
     }
-
-    window.api.send('log-to-console', `[AddCompanyRenderer] Test`);
     
-    //  If part of a carry forward flow, notify the main window
-    if (response.newCompanyId) {
-      window.logging.info('[addCompanyRenderer] initiating next part of carry forward');
-      window.api.send('carry-forward-after-company-created', response.newCompanyId);
-    }
     
     window.api.send('refresh-companies');
     window.close();

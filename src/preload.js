@@ -4,7 +4,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('api', {
     showMessage: (message, title = 'Notification') => ipcRenderer.invoke('show-message', message, title),
     getCompanies: () => ipcRenderer.invoke('get-companies'),
-    addCompany: (name) => ipcRenderer.invoke('add-company', name),
+    addCompany: (name, carryForwardFromId = null) => ipcRenderer.invoke('add-company', name, carryForwardFromId),
     openCompanyWindow: (id) => ipcRenderer.invoke('open-company-window', id),
     getCompanyName: (companyId) => ipcRenderer.invoke('get-company-name', companyId),
     getTransactions: (companyId) => ipcRenderer.invoke('get-transactions', companyId),
@@ -30,6 +30,7 @@ contextBridge.exposeInMainWorld('api', {
     getActiveCompanyId: () => ipcRenderer.invoke('get-active-company-id'),
     openAddCompanyWindow: () => ipcRenderer.send('open-add-company-window'),
     getProfitLossSummary: (companyId) => ipcRenderer.invoke('get-profit-loss-summary', companyId),
+    getCarryForwardSource: () => ipcRenderer.invoke('get-carry-forward-source'),
     receive: (channel, callback) => ipcRenderer.on(channel, (_, data1, data2) => callback(data1, data2)),
     send: (channel, data) => ipcRenderer.send(channel, data),
 });

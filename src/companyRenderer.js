@@ -322,19 +322,21 @@ window.addEventListener('DOMContentLoaded', () => {
       }
 
       window.logging.info("[companyRenderer][Carry Forward] Initiating Carry Forward");
-      isCarryForwardToNewCompany = true;
-      carryForwardSourceCompanyId = currentCompanyId;
+
+      window.api.send('set-carry-forward-source', currentCompanyId);
     
       // Reuse existing flow to open add company window
       window.api.openAddCompanyWindow();
-      window.api.receive('log-to-console', (msg) => {window.logging.info(msg);});
     });
 
-    window.api.receive('carry-forward-after-company-created', async (newCompanyId) => {
-      if (!isCarryForwardToNewCompany || !carryForwardSourceCompanyId) {
-        window.logging.info("[companyRenderer][Carry Forward] Not triggered via carry forward flow.");
-        return; // This wasn't a carry forward operation
+    window.api.receive('carry-forward-after-company-created', async (newCompanyId, sourceCompanyId) => {
+      if (!sourceCompanyId) {
+        window.logging.error('[companyRenderer][Carry Forward] no source company')
+        return;
       }
+
+      isCarryForwardToNewCompany = true;
+      carryForwardSourceCompanyId = sourceCompanyId;
     
       try {
         window.logging.info(`[companyRenderer][Carry Forward] Starting from company ID: ${carryForwardSourceCompanyId} to new company ID: ${newCompanyId}`);
@@ -358,17 +360,17 @@ window.addEventListener('DOMContentLoaded', () => {
         }));
 
         window.logging.info(`[companyRenderer][Carry Forward] Cloning ${clonedAccounts.length} accounts.`);
-    
+
         // Step 1: Create all accounts in the new company
         for (const acc of clonedAccounts) {
           window.logging.info(`[companyRenderer][Carry Forward] Adding account: ${acc.account_code}`);
           await window.api.addAccount(newCompanyId, acc.account_code, acc.account_name, acc.account_type);
         }
-    
+        
         // Step 2: Prepare carry forward transaction
         const carryForwardTransaction = plAccountsToCarry.map(account => {
-          window.logging.info(`[companyRenderer][Carry Forward] Preparing transaction for ${account.account_code} with balance ${balance}`);
           const balance = (account.totalCredit || 0) - (account.totalDebit || 0);
+          window.logging.info(`[companyRenderer][Carry Forward] Preparing transaction for ${account.account_code} with balance ${balance}`);
           return {
             transaction_no: 1,
             date: new Date().toISOString().split('T')[0],

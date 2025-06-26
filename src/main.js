@@ -11,6 +11,8 @@ const log = require('./logger');
 const isMac = process.platform == 'darwin';
 const isDev = process.env.NODE_ENV != 'development';
 
+let carryForwardSourceCompanyId = null;
+
 //let mainWindow
 
 // main window
@@ -163,9 +165,9 @@ ipcMain.handle('get-companies', async () => {
   }
 });
 
-ipcMain.handle('add-company', async (event, name) => {
+ipcMain.handle('add-company', async (event, name, carryForwardFromId = null) => {
   try {
-    log.info(`[Main][IPC] add-companies (${name})`);
+    log.info(`[Main][IPC] add-companies (${name}) from (${carryForwardFromId})`);
     const companiesBefore = await getCompanies();
     const addResult = await addCompany(name);
     const companiesAfter = await getCompanies();
@@ -174,7 +176,12 @@ ipcMain.handle('add-company', async (event, name) => {
     const newCompany = companiesAfter.find(c => !companiesBefore.some(cb => cb.id === c.id));
     const newCompanyId = newCompany?.id;
 
-
+    if (carryForwardFromId) {
+      log.info('[Main] Starting the next part of carryForward')
+      BrowserWindow.getAllWindows().forEach(win => {
+        win.webContents.send('carry-forward-after-company-created', newCompanyId, carryForwardFromId);
+      });
+    }
     // Send refresh-companies to all renderer processes (or target mainWindow specifically if you track it)
     BrowserWindow.getAllWindows().forEach(win => {
       win.webContents.send('refresh-companies');
@@ -405,6 +412,12 @@ ipcMain.handle('get-profit-loss-summary', async (event, companyId) => {
   log.info('[Main][IPC] profit loss sumarry generated');
 
   return report;
+});
+
+ipcMain.handle('get-carry-forward-source', () => carryForwardSourceCompanyId);
+
+ipcMain.on('set-carry-forward-source', (_, sourceId) => {
+  carryForwardSourceCompanyId = sourceId;
 });
 
 // Handle IPC request to open Profit & Loss window
