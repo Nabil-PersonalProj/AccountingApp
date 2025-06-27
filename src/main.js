@@ -84,6 +84,25 @@ function createProfitLossWindow(companyId) {
   log.info(`[Main] createProfitLossWindow(${companyId})`);
 }
 
+function createBalanceSheetWindow(companyId) {
+  const balanceSheetWindow = new BrowserWindow({
+    width: 800,
+    height: 600,
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      preload: path.join(__dirname, 'preload.js'),
+    }
+  });
+
+  balanceSheetWindow.loadFile(path.join(__dirname, 'windows', 'balanceSheetWindow.html'));
+
+  balanceSheetWindow.webContents.on('did-finish-load', () => {
+    balanceSheetWindow.webContents.send('load-balance-sheet', companyId);
+  });
+  log.info(`[Main] createbalanceSheetWindow(${companyId})`);
+}
+
 function addTransactionWindow(companyId) {
   const addTransactionWindow = new BrowserWindow({
     width: 1000,
@@ -442,6 +461,10 @@ ipcMain.on('open-edit-transaction-window', (event, companyId, transactionNo) => 
   createEditTransactionWindow(companyId, transactionNo);
 });
 
+ipcMain.on('open-balance-sheet-window', (event, companyId) => {
+  createBalanceSheetWindow(companyId);
+});
+
 // logs
 ipcMain.on('log-info', (_, msg) => {
   console.log(`[Renderer] ${msg}`);
@@ -663,7 +686,18 @@ const menuTemplate = [
         click: () => {
           const focusedWindow = BrowserWindow.getFocusedWindow();
           if (focusedWindow) {
-            focusedWindow.webContents.send('request-company-id');
+            focusedWindow.webContents.send('request-company-id', 'profit-loss');
+          } else {
+            log.error("No active window detected.");
+          }
+        }
+      },
+      {
+        label: 'Balance Sheet',
+        click: () => {
+          const focusedWindow = BrowserWindow.getFocusedWindow();
+          if (focusedWindow) {
+            focusedWindow.webContents.send('request-company-id', 'balance-sheet');
           } else {
             log.error("No active window detected.");
           }
@@ -707,6 +741,15 @@ const menuTemplate = [
             focusedWindow.webContents.send('request-export-transactions');
           }
         }
+      },
+      {
+        label: 'Balance Sheet Report',
+        click: () => {
+          const focusedWindow = BrowserWindow.getFocusedWindow();
+          if (focusedWindow) {
+            focusedWindow.webContents.send('');
+          }
+        },
       },
     ]
   },

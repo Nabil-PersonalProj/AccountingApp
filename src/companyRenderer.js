@@ -306,10 +306,15 @@ window.addEventListener('DOMContentLoaded', () => {
         editTransactionBtn.click();
     });
     
-    window.api.receive('request-company-id', () => {
+    window.api.receive('request-company-id', (type) => {
         if (currentCompanyId) {
-          window.logging.info("[companyRenderer][API] Sending company ID to main process:", currentCompanyId);
-          window.api.send('fetch-company-id', currentCompanyId);
+          if (type == 'balance-sheet') {
+            window.logging.info('[companyRenderer][API] opening balance sheet');
+            window.api.send('open-balance-sheet-window', currentCompanyId);;
+          } else if (type === 'profit-loss') {
+            window.logging.info('[companyRenderer][API] opening profit-loss sheet');
+            window.api.send('fetch-company-id', currentCompanyId);
+          }
         } else {
           window.logging.error("No company ID found.");
           window.api.showMessage("No active company selected.");
