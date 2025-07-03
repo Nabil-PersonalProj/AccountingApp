@@ -2,6 +2,7 @@ let currentCompanyId = null;
 
 window.api.receive('load-balance-sheet', async (companyId) => {
   currentCompanyId = companyId;
+  window.logging.info('[balanceSheetRenderer] Creating balance sheet');
 
   try {
     const accounts = await window.api.getAccounts(companyId);
@@ -32,7 +33,7 @@ window.api.receive('load-balance-sheet', async (companyId) => {
       const balance = getBalance(account.account_code);
 
       switch (account.account_type) {
-        case "Share Capital":
+        case "Equity":
           sections.shareCapital.push({ ...account, balance });
           break;
         case "Profit & Loss":
@@ -58,18 +59,20 @@ window.api.receive('load-balance-sheet', async (companyId) => {
     renderBalanceSheet(sections);
 
   } catch (err) {
-    console.error("Error generating balance sheet:", err);
+    window.logging.console.error("Error generating balance sheet:", err);
     window.api.showMessage("Failed to load balance sheet.");
   }
 });
 
 function formatAmount(value, expectedSide = "debit") {
-  if (expectedSide === "debit" && value < 0) {
+  const isNegativeOnWrongSide =
+    (expectedSide === "debit" && value < 0) ||
+    (expectedSide === "credit" && value < 0);
+
+  if (isNegativeOnWrongSide) {
     return `<span class="negative">(${Math.abs(value).toFixed(2)})</span>`;
   }
-  if (expectedSide === "credit" && value > 0) {
-    return `<span class="negative">(${value.toFixed(2)})</span>`;
-  }
+
   return value.toFixed(2);
 }
 
